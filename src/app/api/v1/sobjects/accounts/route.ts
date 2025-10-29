@@ -4,6 +4,18 @@ import { NextResponse } from "next/server";
 /**
  * @swagger
  * /api/v1/sobjects/accounts:
+ *   get:
+ *     summary: Retrieve all accounts
+ *     tags: [Accounts]
+ *     responses:
+ *       '200':
+ *         description: A list of accounts.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Account'
  *   post:
  *     summary: Create a new account
  *     tags: [Accounts]
@@ -21,6 +33,22 @@ import { NextResponse } from "next/server";
  *             schema:
  *               $ref: '#/components/schemas/Account'
  */
+
+export async function GET(request: Request) {
+  try {
+    const accounts = await prisma.accounts.findMany({
+      orderBy: { created_at: "desc" },
+    });
+
+    return NextResponse.json(accounts);
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    return NextResponse.json(
+      { message: "An error occurred while fetching accounts." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
