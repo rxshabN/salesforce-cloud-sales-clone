@@ -48,6 +48,37 @@ const initialLeadFormData = {
   industry: "",
 };
 
+// Initial state for contact form
+const initialContactFormData = {
+  salutation: "",
+  firstName: "",
+  lastName: "",
+  accountName: "",
+  title: "",
+  reportsTo: "",
+  description: "",
+  email: "",
+  phone: "",
+  mailingCountry: "",
+  mailingStreet: "",
+  mailingCity: "",
+  mailingZipPostalCode: "",
+  mailingStateProvince: "",
+};
+
+// Initial state for opportunity form
+const initialOpportunityFormData = {
+  opportunityName: "",
+  accountName: "",
+  closeDate: "",
+  amount: "",
+  description: "",
+  stage: "",
+  probability: "",
+  forecastCategory: "",
+  nextStep: "",
+};
+
 export default function SalesforceDashboard() {
   const { showToast } = useToast();
 
@@ -66,23 +97,24 @@ export default function SalesforceDashboard() {
   >({});
 
   const [leadFormData, setLeadFormData] = useState(initialLeadFormData);
-  const [contactFormData, setContactFormData] = useState({
-    lastName: "",
-    accountName: "",
-  });
-  const [opportunityFormData, setOpportunityFormData] = useState({
-    opportunityName: "",
-    accountName: "",
-    closeDate: "",
-    stage: "",
-    forecastCategory: "",
-  });
+  const [contactFormData, setContactFormData] = useState(initialContactFormData);
+  const [opportunityFormData, setOpportunityFormData] = useState(initialOpportunityFormData);
 
   // const [currentPage, setCurrentPage] = useState<"home" | "contacts">("home")
 
   const resetLeadForm = () => {
     setLeadFormData(initialLeadFormData);
     setLeadErrors({});
+  };
+
+  const resetContactForm = () => {
+    setContactFormData(initialContactFormData);
+    setContactErrors({});
+  };
+
+  const resetOpportunityForm = () => {
+    setOpportunityFormData(initialOpportunityFormData);
+    setOpportunityErrors({});
   };
 
   const validateLeadForm = () => {
@@ -96,7 +128,9 @@ export default function SalesforceDashboard() {
 
   const validateContactForm = () => {
     const errors: Record<string, boolean> = {};
+    if (!contactFormData.firstName.trim()) errors.firstName = true;
     if (!contactFormData.lastName.trim()) errors.lastName = true;
+    if (!contactFormData.email.trim()) errors.email = true;
     if (!contactFormData.accountName.trim()) errors.accountName = true;
     setContactErrors(errors);
     return Object.keys(errors).length === 0;
@@ -227,31 +261,200 @@ export default function SalesforceDashboard() {
     resetLeadForm();
   };
 
-  const handleContactSave = () => {
-    if (validateContactForm()) {
-      // Form is valid, proceed with save
-      console.log("Contact form saved");
-      setIsNewContactModalOpen(false);
-      showToast(`Contact "${contactFormData.lastName}" was created.`, {
-        label: "Undo",
-        onClick: () => console.log("Undo contact creation"),
+  const handleContactSave = async () => {
+    if (!validateContactForm()) return;
+
+    try {
+      // Note: For now, we're using a placeholder account_id of 1
+      // In a real application, you would need to lookup or create the account first
+      const contactData = {
+        account_id: 1, // TODO: Replace with actual account lookup logic
+        salutation: contactFormData.salutation || null,
+        first_name: contactFormData.firstName,
+        last_name: contactFormData.lastName,
+        title: contactFormData.title || null,
+        description: contactFormData.description || null,
+        contact_owner: "Rishab Nagwani", // Default owner
+        email: contactFormData.email,
+        phone: contactFormData.phone || null,
+        reports_to_contact_id: null, // TODO: Implement contact lookup if needed
+        mailing_country: contactFormData.mailingCountry || null,
+        mailing_street: contactFormData.mailingStreet || null,
+        mailing_city: contactFormData.mailingCity || null,
+        mailing_zip_postal_code: contactFormData.mailingZipPostalCode || null,
+        mailing_state_province: contactFormData.mailingStateProvince || null,
+      };
+
+      const response = await axios.post("/api/v1/sobjects/contacts", contactData);
+
+      if (response.status === 201) {
+        setIsNewContactModalOpen(false);
+        resetContactForm();
+        showToast(
+          `Contact "${contactFormData.firstName} ${contactFormData.lastName}" was created.`,
+          {
+            label: "Undo",
+            onClick: () => console.log("Undo contact creation"),
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      showToast("Failed to create contact. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
       });
     }
   };
 
-  const handleOpportunitySave = () => {
-    if (validateOpportunityForm()) {
-      // Form is valid, proceed with save
-      console.log("Opportunity form saved");
-      setIsNewOpportunityModalOpen(false);
-      showToast(
-        `Opportunity "${opportunityFormData.opportunityName}" was created.`,
-        {
-          label: "Undo",
-          onClick: () => console.log("Undo opportunity creation"),
-        }
-      );
+  const handleContactSaveAndNew = async () => {
+    if (!validateContactForm()) return;
+
+    try {
+      // Note: For now, we're using a placeholder account_id of 1
+      // In a real application, you would need to lookup or create the account first
+      const contactData = {
+        account_id: 1, // TODO: Replace with actual account lookup logic
+        salutation: contactFormData.salutation || null,
+        first_name: contactFormData.firstName,
+        last_name: contactFormData.lastName,
+        title: contactFormData.title || null,
+        description: contactFormData.description || null,
+        contact_owner: "Rishab Nagwani", // Default owner
+        email: contactFormData.email,
+        phone: contactFormData.phone || null,
+        reports_to_contact_id: null, // TODO: Implement contact lookup if needed
+        mailing_country: contactFormData.mailingCountry || null,
+        mailing_street: contactFormData.mailingStreet || null,
+        mailing_city: contactFormData.mailingCity || null,
+        mailing_zip_postal_code: contactFormData.mailingZipPostalCode || null,
+        mailing_state_province: contactFormData.mailingStateProvince || null,
+      };
+
+      const response = await axios.post("/api/v1/sobjects/contacts", contactData);
+
+      if (response.status === 201) {
+        showToast(
+          `Contact "${contactFormData.firstName} ${contactFormData.lastName}" was created.`,
+          {
+            label: "Undo",
+            onClick: () => console.log("Undo contact creation"),
+          }
+        );
+        resetContactForm(); // Reset form but keep modal open
+      }
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      showToast("Failed to create contact. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
     }
+  };
+
+  const handleContactClose = () => {
+    setIsNewContactModalOpen(false);
+    resetContactForm();
+  };
+
+  const handleOpportunitySave = async () => {
+    if (!validateOpportunityForm()) return;
+
+    try {
+      // Note: For now, we're using a placeholder account_id of 1
+      // In a real application, you would need to lookup or create the account first
+      const opportunityData = {
+        account_id: 1, // TODO: Replace with actual account lookup logic
+        name: opportunityFormData.opportunityName,
+        amount: opportunityFormData.amount
+          ? parseFloat(opportunityFormData.amount)
+          : null,
+        close_date: opportunityFormData.closeDate,
+        description: opportunityFormData.description || null,
+        opportunity_owner: "Rishab Nagwani", // Default owner
+        stage: opportunityFormData.stage,
+        probability: opportunityFormData.probability
+          ? parseFloat(opportunityFormData.probability)
+          : null,
+        forecast_category: opportunityFormData.forecastCategory,
+        next_step: opportunityFormData.nextStep || null,
+      };
+
+      const response = await axios.post(
+        "/api/v1/sobjects/opportunities",
+        opportunityData
+      );
+
+      if (response.status === 201) {
+        setIsNewOpportunityModalOpen(false);
+        resetOpportunityForm();
+        showToast(
+          `Opportunity "${opportunityFormData.opportunityName}" was created.`,
+          {
+            label: "Undo",
+            onClick: () => console.log("Undo opportunity creation"),
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error creating opportunity:", error);
+      showToast("Failed to create opportunity. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  const handleOpportunitySaveAndNew = async () => {
+    if (!validateOpportunityForm()) return;
+
+    try {
+      // Note: For now, we're using a placeholder account_id of 1
+      // In a real application, you would need to lookup or create the account first
+      const opportunityData = {
+        account_id: 1, // TODO: Replace with actual account lookup logic
+        name: opportunityFormData.opportunityName,
+        amount: opportunityFormData.amount
+          ? parseFloat(opportunityFormData.amount)
+          : null,
+        close_date: opportunityFormData.closeDate,
+        description: opportunityFormData.description || null,
+        opportunity_owner: "Rishab Nagwani", // Default owner
+        stage: opportunityFormData.stage,
+        probability: opportunityFormData.probability
+          ? parseFloat(opportunityFormData.probability)
+          : null,
+        forecast_category: opportunityFormData.forecastCategory,
+        next_step: opportunityFormData.nextStep || null,
+      };
+
+      const response = await axios.post(
+        "/api/v1/sobjects/opportunities",
+        opportunityData
+      );
+
+      if (response.status === 201) {
+        showToast(
+          `Opportunity "${opportunityFormData.opportunityName}" was created.`,
+          {
+            label: "Undo",
+            onClick: () => console.log("Undo opportunity creation"),
+          }
+        );
+        resetOpportunityForm(); // Reset form but keep modal open
+      }
+    } catch (error) {
+      console.error("Error creating opportunity:", error);
+      showToast("Failed to create opportunity. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  const handleOpportunityClose = () => {
+    setIsNewOpportunityModalOpen(false);
+    resetOpportunityForm();
   };
 
   return (
@@ -1264,14 +1467,14 @@ export default function SalesforceDashboard() {
           {/* Backdrop with blur */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            onClick={() => setIsNewContactModalOpen(false)}
+            onClick={handleContactClose}
           ></div>
 
           {/* Modal Container */}
           <div className="relative z-10 w-full max-w-2xl mx-4">
             {/* Close Button - Outside modal, top right */}
             <button
-              onClick={() => setIsNewContactModalOpen(false)}
+              onClick={handleContactClose}
               className="absolute -top-10 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-150 shadow-lg"
             >
               <X className="w-5 h-5 text-[#706e6b]" />
@@ -1307,22 +1510,58 @@ export default function SalesforceDashboard() {
                           <label className="block text-xs text-[#706e6b] mb-1">
                             Salutation
                           </label>
-                          <select className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
-                            <option>--None--</option>
-                            <option>Mr.</option>
-                            <option>Ms.</option>
-                            <option>Mrs.</option>
-                            <option>Dr.</option>
+                          <select
+                            value={contactFormData.salutation}
+                            onChange={(e) =>
+                              setContactFormData({
+                                ...contactFormData,
+                                salutation: e.target.value,
+                              })
+                            }
+                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                          >
+                            <option value="">--None--</option>
+                            <option value="Mr.">Mr.</option>
+                            <option value="Ms.">Ms.</option>
+                            <option value="Mrs.">Mrs.</option>
+                            <option value="Dr.">Dr.</option>
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs text-[#706e6b] mb-1">
-                            First Name
+                            <span className="text-red-600">*</span> First Name
                           </label>
-                          <Input
-                            placeholder="First Name"
-                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                          />
+                          <div className="relative">
+                            <Input
+                              placeholder="First Name"
+                              value={contactFormData.firstName}
+                              onChange={(e) => {
+                                setContactFormData({
+                                  ...contactFormData,
+                                  firstName: e.target.value,
+                                });
+                                if (contactErrors.firstName) {
+                                  setContactErrors({
+                                    ...contactErrors,
+                                    firstName: false,
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
+                                contactErrors.firstName
+                                  ? "border-2 border-red-600 pr-10"
+                                  : "border border-[#dddbda]"
+                              }`}
+                            />
+                            {contactErrors.firstName && (
+                              <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
+                            )}
+                          </div>
+                          {contactErrors.firstName && (
+                            <p className="text-red-600 text-xs mt-1">
+                              Complete this field.
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs text-[#706e6b] mb-1">
@@ -1403,7 +1642,16 @@ export default function SalesforceDashboard() {
                       <label className="block text-sm text-[#181818] mb-1">
                         Title
                       </label>
-                      <Input className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150" />
+                      <Input
+                        value={contactFormData.title}
+                        onChange={(e) =>
+                          setContactFormData({
+                            ...contactFormData,
+                            title: e.target.value,
+                          })
+                        }
+                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                      />
                     </div>
 
                     {/* Reports To with Search */}
@@ -1414,6 +1662,13 @@ export default function SalesforceDashboard() {
                       <div className="relative">
                         <Input
                           placeholder="Search Contacts..."
+                          value={contactFormData.reportsTo}
+                          onChange={(e) =>
+                            setContactFormData({
+                              ...contactFormData,
+                              reportsTo: e.target.value,
+                            })
+                          }
                           className="w-full border border-[#dddbda] rounded px-3 py-2 pr-10 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                         />
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
@@ -1426,6 +1681,13 @@ export default function SalesforceDashboard() {
                         Description
                       </label>
                       <textarea
+                        value={contactFormData.description}
+                        onChange={(e) =>
+                          setContactFormData({
+                            ...contactFormData,
+                            description: e.target.value,
+                          })
+                        }
                         className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-20"
                         style={{
                           fontFamily:
@@ -1447,18 +1709,54 @@ export default function SalesforceDashboard() {
                       <label className="block text-sm text-[#181818] mb-1">
                         Phone
                       </label>
-                      <Input className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150" />
+                      <Input
+                        value={contactFormData.phone}
+                        onChange={(e) =>
+                          setContactFormData({
+                            ...contactFormData,
+                            phone: e.target.value,
+                          })
+                        }
+                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                      />
                     </div>
 
                     {/* Email */}
                     <div>
                       <label className="block text-sm text-[#181818] mb-1">
-                        Email
+                        <span className="text-red-600">*</span> Email
                       </label>
-                      <Input
-                        type="email"
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="email"
+                          value={contactFormData.email}
+                          onChange={(e) => {
+                            setContactFormData({
+                              ...contactFormData,
+                              email: e.target.value,
+                            });
+                            if (contactErrors.email) {
+                              setContactErrors({
+                                ...contactErrors,
+                                email: false,
+                              });
+                            }
+                          }}
+                          className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
+                            contactErrors.email
+                              ? "border-2 border-red-600 pr-10"
+                              : "border border-[#dddbda]"
+                          }`}
+                        />
+                        {contactErrors.email && (
+                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
+                        )}
+                      </div>
+                      {contactErrors.email && (
+                        <p className="text-red-600 text-xs mt-1">
+                          Complete this field.
+                        </p>
+                      )}
                     </div>
 
                     {/* Mailing Address */}
@@ -1471,11 +1769,20 @@ export default function SalesforceDashboard() {
                           <label className="block text-xs text-[#706e6b] mb-1">
                             Mailing Country
                           </label>
-                          <select className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
-                            <option>--None--</option>
-                            <option>United States</option>
-                            <option>Canada</option>
-                            <option>United Kingdom</option>
+                          <select
+                            value={contactFormData.mailingCountry}
+                            onChange={(e) =>
+                              setContactFormData({
+                                ...contactFormData,
+                                mailingCountry: e.target.value,
+                              })
+                            }
+                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                          >
+                            <option value="">--None--</option>
+                            <option value="United States">United States</option>
+                            <option value="Canada">Canada</option>
+                            <option value="United Kingdom">United Kingdom</option>
                           </select>
                         </div>
                         <div>
@@ -1483,6 +1790,13 @@ export default function SalesforceDashboard() {
                             Mailing Street
                           </label>
                           <textarea
+                            value={contactFormData.mailingStreet}
+                            onChange={(e) =>
+                              setContactFormData({
+                                ...contactFormData,
+                                mailingStreet: e.target.value,
+                              })
+                            }
                             className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-[60px]"
                             style={{
                               fontFamily:
@@ -1494,24 +1808,51 @@ export default function SalesforceDashboard() {
                           <label className="block text-xs text-[#706e6b] mb-1">
                             Mailing City
                           </label>
-                          <Input className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150" />
+                          <Input
+                            value={contactFormData.mailingCity}
+                            onChange={(e) =>
+                              setContactFormData({
+                                ...contactFormData,
+                                mailingCity: e.target.value,
+                              })
+                            }
+                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                          />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs text-[#706e6b] mb-1">
                               Mailing Zip/Postal Code
                             </label>
-                            <Input className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150" />
+                            <Input
+                              value={contactFormData.mailingZipPostalCode}
+                              onChange={(e) =>
+                                setContactFormData({
+                                  ...contactFormData,
+                                  mailingZipPostalCode: e.target.value,
+                                })
+                              }
+                              className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                            />
                           </div>
                           <div>
                             <label className="block text-xs text-[#706e6b] mb-1">
                               Mailing State/Province
                             </label>
-                            <select className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
-                              <option>--None--</option>
-                              <option>California</option>
-                              <option>New York</option>
-                              <option>Texas</option>
+                            <select
+                              value={contactFormData.mailingStateProvince}
+                              onChange={(e) =>
+                                setContactFormData({
+                                  ...contactFormData,
+                                  mailingStateProvince: e.target.value,
+                                })
+                              }
+                              className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                            >
+                              <option value="">--None--</option>
+                              <option value="California">California</option>
+                              <option value="New York">New York</option>
+                              <option value="Texas">Texas</option>
                             </select>
                           </div>
                         </div>
@@ -1524,13 +1865,13 @@ export default function SalesforceDashboard() {
               {/* Modal Footer */}
               <div className="px-6 py-4 border-t border-[#dddbda] flex items-center justify-end gap-3">
                 <Button
-                  onClick={() => setIsNewContactModalOpen(false)}
+                  onClick={handleContactClose}
                   className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleContactSave}
+                  onClick={handleContactSaveAndNew}
                   className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
                 >
                   Save & New
@@ -1553,14 +1894,14 @@ export default function SalesforceDashboard() {
           {/* Backdrop with blur */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            onClick={() => setIsNewOpportunityModalOpen(false)}
+            onClick={handleOpportunityClose}
           ></div>
 
           {/* Modal Container */}
           <div className="relative z-10 w-full max-w-2xl mx-4">
             {/* Close Button - Outside modal, top right */}
             <button
-              onClick={() => setIsNewOpportunityModalOpen(false)}
+              onClick={handleOpportunityClose}
               className="absolute -top-10 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-150 shadow-lg"
             >
               <X className="w-5 h-5 text-[#706e6b]" />
@@ -1699,6 +2040,13 @@ export default function SalesforceDashboard() {
                       </label>
                       <Input
                         type="number"
+                        value={opportunityFormData.amount}
+                        onChange={(e) =>
+                          setOpportunityFormData({
+                            ...opportunityFormData,
+                            amount: e.target.value,
+                          })
+                        }
                         className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                       />
                     </div>
@@ -1709,6 +2057,13 @@ export default function SalesforceDashboard() {
                         Description
                       </label>
                       <textarea
+                        value={opportunityFormData.description}
+                        onChange={(e) =>
+                          setOpportunityFormData({
+                            ...opportunityFormData,
+                            description: e.target.value,
+                          })
+                        }
                         className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-20"
                         style={{
                           fontFamily:
@@ -1794,6 +2149,13 @@ export default function SalesforceDashboard() {
                         type="number"
                         min="0"
                         max="100"
+                        value={opportunityFormData.probability}
+                        onChange={(e) =>
+                          setOpportunityFormData({
+                            ...opportunityFormData,
+                            probability: e.target.value,
+                          })
+                        }
                         className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                       />
                     </div>
@@ -1847,7 +2209,16 @@ export default function SalesforceDashboard() {
                       <label className="block text-sm text-[#181818] mb-1">
                         Next Step
                       </label>
-                      <Input className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150" />
+                      <Input
+                        value={opportunityFormData.nextStep}
+                        onChange={(e) =>
+                          setOpportunityFormData({
+                            ...opportunityFormData,
+                            nextStep: e.target.value,
+                          })
+                        }
+                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1856,13 +2227,13 @@ export default function SalesforceDashboard() {
               {/* Modal Footer */}
               <div className="px-6 py-4 border-t border-[#dddbda] flex items-center justify-end gap-3">
                 <Button
-                  onClick={() => setIsNewOpportunityModalOpen(false)}
+                  onClick={handleOpportunityClose}
                   className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleOpportunitySave}
+                  onClick={handleOpportunitySaveAndNew}
                   className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
                 >
                   Save & New
