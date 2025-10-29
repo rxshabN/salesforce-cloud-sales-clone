@@ -4,6 +4,18 @@ import { NextResponse } from "next/server";
 /**
  * @swagger
  * /api/v1/sobjects/contacts:
+ *   get:
+ *     summary: Retrieve all contacts
+ *     tags: [Contacts]
+ *     responses:
+ *       '200':
+ *         description: A list of contacts with their account information.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Contact'
  *   post:
  *     summary: Create a new contact
  *     tags: [Contacts]
@@ -21,6 +33,27 @@ import { NextResponse } from "next/server";
  *             schema:
  *               $ref: '#/components/schemas/Contact'
  */
+
+export async function GET(request: Request) {
+  try {
+    const contacts = await prisma.contacts.findMany({
+      include: {
+        accounts: {
+          select: { name: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    return NextResponse.json(contacts);
+  } catch (error) {
+    console.error("Error fetching contacts:", error);
+    return NextResponse.json(
+      { message: "An error occurred while fetching contacts." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
