@@ -15,9 +15,18 @@ interface Column {
 interface ResizableTableProps {
   columns: Column[]
   children?: React.ReactNode
+  onSort?: (columnKey: string, direction: "asc" | "desc") => void
+  sortColumn?: string | null
+  sortDirection?: "asc" | "desc"
 }
 
-export default function ResizableTable({ columns, children }: ResizableTableProps) {
+export default function ResizableTable({
+  columns,
+  children,
+  onSort,
+  sortColumn: externalSortColumn,
+  sortDirection: externalSortDirection
+}: ResizableTableProps) {
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     const widths: Record<string, number> = {}
     columns.forEach((col) => {
@@ -29,8 +38,12 @@ export default function ResizableTable({ columns, children }: ResizableTableProp
   const [resizingColumn, setResizingColumn] = useState<string | null>(null)
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null)
   const [hoveredResizer, setHoveredResizer] = useState<string | null>(null)
-  const [sortColumn, setSortColumn] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [internalSortColumn, setInternalSortColumn] = useState<string | null>(null)
+  const [internalSortDirection, setInternalSortDirection] = useState<"asc" | "desc">("asc")
+
+  // Use external sort state if provided, otherwise use internal
+  const sortColumn = externalSortColumn !== undefined ? externalSortColumn : internalSortColumn
+  const sortDirection = externalSortDirection !== undefined ? externalSortDirection : internalSortDirection
 
   const startXRef = useRef<number>(0)
   const startWidthRef = useRef<number>(0)
@@ -51,11 +64,15 @@ export default function ResizableTable({ columns, children }: ResizableTableProp
   }
 
   const handleSort = (columnKey: string) => {
-    if (sortColumn === columnKey) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    const newDirection = sortColumn === columnKey && sortDirection === "asc" ? "desc" : "asc"
+
+    if (onSort) {
+      // If external sort handler provided, use it
+      onSort(columnKey, newDirection)
     } else {
-      setSortColumn(columnKey)
-      setSortDirection("asc")
+      // Otherwise use internal state
+      setInternalSortColumn(columnKey)
+      setInternalSortDirection(newDirection)
     }
   }
 

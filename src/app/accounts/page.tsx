@@ -49,6 +49,11 @@ export default function AccountsPage() {
   // Dropdown menu state
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null)
 
+  // Search and sort state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
   const hasRecords = accounts.length > 0
 
   const columns = [
@@ -78,6 +83,63 @@ export default function AccountsPage() {
   useEffect(() => {
     fetchAccounts()
   }, [])
+
+  // Filter and sort accounts
+  const filteredAndSortedAccounts = () => {
+    let filtered = [...accounts]
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter((account) =>
+        account.name?.toLowerCase().includes(query) ||
+        account.phone?.toLowerCase().includes(query) ||
+        account.account_owner?.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        let aVal, bVal
+
+        switch (sortColumn) {
+          case "accountName":
+            aVal = a.name || ""
+            bVal = b.name || ""
+            break
+          case "phone":
+            aVal = a.phone || ""
+            bVal = b.phone || ""
+            break
+          case "accountOwnerAlias":
+            aVal = a.account_owner || ""
+            bVal = b.account_owner || ""
+            break
+          default:
+            return 0
+        }
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortDirection === "asc"
+            ? aVal.localeCompare(bVal)
+            : bVal.localeCompare(aVal)
+        }
+
+        return 0
+      })
+    }
+
+    return filtered
+  }
+
+  const displayedAccounts = filteredAndSortedAccounts()
+
+  // Handle sort
+  const handleSort = (columnKey: string, direction: "asc" | "desc") => {
+    setSortColumn(columnKey)
+    setSortDirection(direction)
+  }
 
   const resetAccountForm = () => {
     setAccountFormData(initialAccountFormData)
@@ -329,7 +391,7 @@ export default function AccountsPage() {
 
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-600">
-                {loading ? "Loading..." : `${accounts.length} item${accounts.length !== 1 ? 's' : ''} • Updated a few seconds ago`}
+                {loading ? "Loading..." : `${displayedAccounts.length} item${displayedAccounts.length !== 1 ? 's' : ''} • Updated a few seconds ago`}
               </p>
               <div className="flex items-center gap-2">
                 <div className="relative">
@@ -337,6 +399,8 @@ export default function AccountsPage() {
                   <input
                     type="text"
                     placeholder="Search this list..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:outline-none focus:ring-1 focus:ring-[#0176d3]"
                   />
                 </div>
@@ -355,7 +419,12 @@ export default function AccountsPage() {
             </div>
           </div>
 
-          <ResizableTable columns={columns}>
+          <ResizableTable
+            columns={columns}
+            onSort={handleSort}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+          >
             {loading ? (
               <tr>
                 <td colSpan={columns.length + 1} className="text-center py-8">
@@ -365,7 +434,7 @@ export default function AccountsPage() {
                   </div>
                 </td>
               </tr>
-            ) : accounts.length === 0 ? (
+            ) : displayedAccounts.length === 0 ? (
               /* Empty State */
               <tr>
                 <td colSpan={columns.length + 1}>
@@ -404,7 +473,7 @@ export default function AccountsPage() {
               </tr>
             ) : (
               /* Account Rows */
-              accounts.map((account) => (
+              displayedAccounts.map((account) => (
                 <tr key={account.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="w-12 px-4 py-3">
                     <input type="checkbox" className="rounded border-gray-300" />
