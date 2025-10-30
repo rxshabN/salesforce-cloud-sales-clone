@@ -38,6 +38,11 @@ export default function LeadsContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
 
+  // Search and sort state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
   const columns = [
     { key: "name", label: "Name", defaultWidth: 200, minWidth: 100 },
     { key: "title", label: "Title", defaultWidth: 150, minWidth: 100 },
@@ -57,6 +62,51 @@ export default function LeadsContent() {
   ]
 
   const hasRecords = true
+
+  // Filter and sort leads
+  const filteredAndSortedLeads = () => {
+    let filtered = [...leads]
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter((lead) =>
+        lead.name?.toLowerCase().includes(query) ||
+        lead.title?.toLowerCase().includes(query) ||
+        lead.company?.toLowerCase().includes(query) ||
+        lead.phone?.toLowerCase().includes(query) ||
+        lead.email?.toLowerCase().includes(query) ||
+        lead.leadStatus?.toLowerCase().includes(query) ||
+        lead.ownerAlias?.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        let aVal = a[sortColumn as keyof Lead] || ""
+        let bVal = b[sortColumn as keyof Lead] || ""
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortDirection === "asc"
+            ? aVal.localeCompare(bVal)
+            : bVal.localeCompare(aVal)
+        }
+
+        return 0
+      })
+    }
+
+    return filtered
+  }
+
+  const displayedLeads = filteredAndSortedLeads()
+
+  // Handle sort
+  const handleSort = (columnKey: string, direction: "asc" | "desc") => {
+    setSortColumn(columnKey)
+    setSortDirection(direction)
+  }
 
   const handleEdit = (lead: Lead) => {
     setSelectedLead(lead)
@@ -111,6 +161,8 @@ export default function LeadsContent() {
               <input
                 type="text"
                 placeholder="Search this list..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:outline-none focus:ring-1 focus:ring-[#0176d3]"
               />
             </div>
@@ -129,8 +181,13 @@ export default function LeadsContent() {
         </div>
       </div>
 
-      <ResizableTable columns={columns}>
-        {leads.map((lead) => (
+      <ResizableTable
+        columns={columns}
+        onSort={handleSort}
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+      >
+        {displayedLeads.map((lead) => (
           <tr key={lead.id} className="hover:bg-[#f3f2f2] border-b border-gray-200">
             <td className="px-4 py-3">
               <input type="checkbox" className="w-4 h-4 rounded border-gray-300" />

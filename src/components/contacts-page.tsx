@@ -48,6 +48,12 @@ export default function ContactsPage() {
 
   // Dropdown menu state
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null)
+
+  // Search and sort state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
   const columns = [
     { key: "name", label: "Name", defaultWidth: 200, minWidth: 100 },
     { key: "accountName", label: "Account Name", defaultWidth: 180, minWidth: 100 },
@@ -77,6 +83,73 @@ export default function ContactsPage() {
   useEffect(() => {
     fetchContacts()
   }, [])
+
+  // Filter and sort contacts
+  const filteredAndSortedContacts = () => {
+    let filtered = [...contacts]
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter((contact) =>
+        `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(query) ||
+        contact.accounts?.name?.toLowerCase().includes(query) ||
+        contact.phone?.toLowerCase().includes(query) ||
+        contact.email?.toLowerCase().includes(query) ||
+        contact.contact_owner?.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        let aVal, bVal
+
+        switch (sortColumn) {
+          case "name":
+            aVal = `${a.first_name} ${a.last_name}` || ""
+            bVal = `${b.first_name} ${b.last_name}` || ""
+            break
+          case "accountName":
+            aVal = a.accounts?.name || ""
+            bVal = b.accounts?.name || ""
+            break
+          case "phone":
+            aVal = a.phone || ""
+            bVal = b.phone || ""
+            break
+          case "email":
+            aVal = a.email || ""
+            bVal = b.email || ""
+            break
+          case "contactOwnerAlias":
+            aVal = a.contact_owner || ""
+            bVal = b.contact_owner || ""
+            break
+          default:
+            return 0
+        }
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortDirection === "asc"
+            ? aVal.localeCompare(bVal)
+            : bVal.localeCompare(aVal)
+        }
+
+        return 0
+      })
+    }
+
+    return filtered
+  }
+
+  const displayedContacts = filteredAndSortedContacts()
+
+  // Handle sort
+  const handleSort = (columnKey: string, direction: "asc" | "desc") => {
+    setSortColumn(columnKey)
+    setSortDirection(direction)
+  }
 
   const resetContactForm = () => {
     setContactFormData(initialContactFormData)
@@ -349,6 +422,8 @@ export default function ContactsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
                 <Input
                   placeholder="Search this list..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 border border-[#dddbda] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 h-9 text-sm rounded"
                 />
               </div>
@@ -380,7 +455,12 @@ export default function ContactsPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <ResizableTable columns={columns}>
+              <ResizableTable
+                columns={columns}
+                onSort={handleSort}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+              >
                 {loading ? (
                   <tr>
                     <td colSpan={columns.length + 1} className="text-center py-8">
@@ -432,7 +512,7 @@ export default function ContactsPage() {
                   </tr>
                 ) : (
                   /* Contact Rows */
-                  contacts.map((contact) => (
+                  displayedContacts.map((contact) => (
                     <tr key={contact.id} className="border-b border-[#dddbda] hover:bg-[#f3f2f2]">
                       <td className="w-12 px-4 py-3">
                         <input type="checkbox" className="rounded border-[#dddbda]" />

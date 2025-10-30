@@ -57,6 +57,55 @@ export default function OpportunitiesContent() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null)
 
+  // Search and sort state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
+  // Filter and sort opportunities
+  const filteredAndSortedOpportunities = () => {
+    let filtered = [...opportunities]
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter((opp) =>
+        opp.opportunityName?.toLowerCase().includes(query) ||
+        opp.accountName?.toLowerCase().includes(query) ||
+        opp.stage?.toLowerCase().includes(query) ||
+        opp.closeDate?.toLowerCase().includes(query) ||
+        opp.opportunityOwnerAlias?.toLowerCase().includes(query) ||
+        opp.amount?.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        let aVal = a[sortColumn as keyof Opportunity] || ""
+        let bVal = b[sortColumn as keyof Opportunity] || ""
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortDirection === "asc"
+            ? aVal.localeCompare(bVal)
+            : bVal.localeCompare(aVal)
+        }
+
+        return 0
+      })
+    }
+
+    return filtered
+  }
+
+  const displayedOpportunities = filteredAndSortedOpportunities()
+
+  // Handle sort
+  const handleSort = (columnKey: string, direction: "asc" | "desc") => {
+    setSortColumn(columnKey)
+    setSortDirection(direction)
+  }
+
   const handleEdit = (opportunity: Opportunity) => {
     setSelectedOpportunity(opportunity)
     setEditModalOpen(true)
@@ -125,6 +174,8 @@ export default function OpportunitiesContent() {
                 <input
                   type="text"
                   placeholder="Search this list..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-[#0176d3]"
                 />
               </div>
@@ -144,8 +195,13 @@ export default function OpportunitiesContent() {
         </div>
 
         {/* Table */}
-        <ResizableTable columns={columns}>
-          {opportunities.map((opportunity) => (
+        <ResizableTable
+          columns={columns}
+          onSort={handleSort}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+        >
+          {displayedOpportunities.map((opportunity) => (
             <tr key={opportunity.id} className="border-b border-gray-200 hover:bg-gray-50">
               <td className="py-3 px-4">
                 <input type="checkbox" className="rounded border-gray-300" />
