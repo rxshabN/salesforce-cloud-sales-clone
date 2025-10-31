@@ -269,7 +269,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const contactData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
@@ -278,7 +278,7 @@ export default function SalesforceDashboard() {
         contact_owner: "Rishab Nagwani", // Default owner
         email: contactFormData.email,
         phone: contactFormData.phone || null,
-        reports_to_contact_id: null, // TODO: Implement contact lookup if needed
+        reports_to_contact_id: null,
         mailing_country: contactFormData.mailingCountry || null,
         mailing_street: contactFormData.mailingStreet || null,
         mailing_city: contactFormData.mailingCity || null,
@@ -315,7 +315,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const contactData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
@@ -324,7 +324,7 @@ export default function SalesforceDashboard() {
         contact_owner: "Rishab Nagwani", // Default owner
         email: contactFormData.email,
         phone: contactFormData.phone || null,
-        reports_to_contact_id: null, // TODO: Implement contact lookup if needed
+        reports_to_contact_id: null,
         mailing_country: contactFormData.mailingCountry || null,
         mailing_street: contactFormData.mailingStreet || null,
         mailing_city: contactFormData.mailingCity || null,
@@ -365,7 +365,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const opportunityData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         name: opportunityFormData.opportunityName,
         amount: opportunityFormData.amount
           ? parseFloat(opportunityFormData.amount)
@@ -413,7 +413,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const opportunityData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         name: opportunityFormData.opportunityName,
         amount: opportunityFormData.amount
           ? parseFloat(opportunityFormData.amount)
