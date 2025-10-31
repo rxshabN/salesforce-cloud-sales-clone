@@ -3,6 +3,7 @@
 import { Search, ChevronDown, Settings, Grid3x3, RefreshCw, Pin, Edit, PieChart, Filter, X, MoreVertical, AlertCircle, Trash2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import Link from "next/link"
 import ResizableTable from "@/components/resizable-table"
 import { ButtonGroup, IconButtonGroup, IconButton, GroupedIconButtons } from "@/components/ui/button-group"
 import { useToast } from "@/components/toast-provider"
@@ -548,9 +549,9 @@ export default function AccountsPage() {
                         autoFocus
                       />
                     ) : (
-                      <a href="#" className="text-[#0176d3] hover:underline">
+                      <Link href={`/accounts/${account.id}`} className="text-[#0176d3] hover:underline">
                         {account.name}
-                      </a>
+                      </Link>
                     )}
                   </td>
                   <td

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Search, ChevronDown, RefreshCw, Settings, MoreVertical, Filter, Pencil, Grid3x3, Pin, AlertCircle, Trash2, Edit } from "lucide-react"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import Link from "next/link"
 import ResizableTable from "@/components/resizable-table"
 import { useToast } from "@/components/toast-provider"
 import ContactFormModal from "@/components/modals/contact-form-modal"
@@ -577,9 +578,9 @@ export default function ContactsPage() {
                         <input type="checkbox" className="rounded border-[#dddbda]" />
                       </td>
                       <td className="px-4 py-3">
-                        <a href="#" className="text-[#0176d3] hover:underline">
+                        <Link href={`/contacts/${contact.id}`} className="text-[#0176d3] hover:underline">
                           {contact.first_name} {contact.last_name}
-                        </a>
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-sm text-[#181818]">
                         {contact.accounts?.name || "-"}
