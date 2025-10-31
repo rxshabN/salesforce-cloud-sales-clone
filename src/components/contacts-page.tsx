@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Search, ChevronDown, RefreshCw, Settings, MoreVertical, Filter, Pencil, Grid3x3, Pin, AlertCircle, Trash2, Edit } from "lucide-react"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import Link from "next/link"
 import ResizableTable from "@/components/resizable-table"
 import { useToast } from "@/components/toast-provider"
 import ContactFormModal from "@/components/modals/contact-form-modal"
@@ -53,6 +54,10 @@ export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{ contactId: number; field: string } | null>(null)
+  const [editingValue, setEditingValue] = useState("")
 
   const columns = [
     { key: "name", label: "Name", defaultWidth: 200, minWidth: 100 },
@@ -173,7 +178,7 @@ export default function ContactsPage() {
 
     try {
       const contactData = {
-        account_id: 1, // TODO: Implement account lookup
+        account_id: 1,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
@@ -182,7 +187,7 @@ export default function ContactsPage() {
         contact_owner: "Rishab Nagwani",
         email: contactFormData.email,
         phone: contactFormData.phone || null,
-        reports_to_contact_id: null, // TODO: Implement contact lookup
+        reports_to_contact_id: null,
         mailing_country: contactFormData.mailingCountry || null,
         mailing_street: contactFormData.mailingStreet || null,
         mailing_city: contactFormData.mailingCity || null,
@@ -290,9 +295,9 @@ export default function ContactsPage() {
         salutation: contact.salutation || "",
         firstName: contact.first_name || "",
         lastName: contact.last_name || "",
-        accountName: "", // TODO: Load account name
+        accountName: "",
         title: contact.title || "",
-        reportsTo: "", // TODO: Load reports to contact name
+        reportsTo: "",
         description: contact.description || "",
         email: contact.email || "",
         phone: contact.phone || "",
@@ -343,6 +348,61 @@ export default function ContactsPage() {
         onClick: () => {},
       })
     }
+  }
+
+  // Inline editing handlers
+  const handleCellDoubleClick = (contactId: number, field: string, currentValue: string) => {
+    setEditingCell({ contactId, field })
+    setEditingValue(currentValue || "")
+  }
+
+  const handleCellSave = async (contactId: number, field: string) => {
+    if (!editingCell) return
+
+    try {
+      const updateData: any = {}
+      if (field === "phone") {
+        updateData.phone = editingValue
+      } else if (field === "email") {
+        updateData.email = editingValue
+      } else if (field === "firstName") {
+        updateData.first_name = editingValue
+      } else if (field === "lastName") {
+        updateData.last_name = editingValue
+      }
+
+      await axios.patch(`/api/v1/sobjects/contacts/${contactId}`, updateData)
+      showToast(`Contact ${field} updated successfully.`, {
+        label: "Undo",
+        onClick: () => console.log("Undo inline edit"),
+      })
+      setEditingCell(null)
+      setEditingValue("")
+      fetchContacts()
+    } catch (error) {
+      console.error("Error updating contact:", error)
+      showToast("Failed to update contact. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      })
+      setEditingCell(null)
+      setEditingValue("")
+    }
+  }
+
+  const handleCellKeyDown = (e: React.KeyboardEvent, contactId: number, field: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleCellSave(contactId, field)
+    } else if (e.key === "Escape") {
+      setEditingCell(null)
+      setEditingValue("")
+    }
+  }
+
+  const handleCellBlur = (contactId: number, field: string) => {
+    // Save on blur
+    handleCellSave(contactId, field)
   }
 
   return (
@@ -518,18 +578,48 @@ export default function ContactsPage() {
                         <input type="checkbox" className="rounded border-[#dddbda]" />
                       </td>
                       <td className="px-4 py-3">
-                        <a href="#" className="text-[#0176d3] hover:underline">
+                        <Link href={`/contacts/${contact.id}`} className="text-[#0176d3] hover:underline">
                           {contact.first_name} {contact.last_name}
-                        </a>
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-sm text-[#181818]">
                         {contact.accounts?.name || "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#181818]">
-                        {contact.phone || "-"}
+                      <td
+                        className={`px-4 py-3 text-sm text-[#181818] cursor-pointer ${editingCell?.contactId === contact.id && editingCell?.field === "phone" ? "bg-blue-50" : ""}`}
+                        onDoubleClick={() => handleCellDoubleClick(contact.id, "phone", contact.phone)}
+                      >
+                        {editingCell?.contactId === contact.id && editingCell?.field === "phone" ? (
+                          <input
+                            type="text"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={() => handleCellBlur(contact.id, "phone")}
+                            onKeyDown={(e) => handleCellKeyDown(e, contact.id, "phone")}
+                            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          />
+                        ) : (
+                          contact.phone || "-"
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#181818]">
-                        {contact.email || "-"}
+                      <td
+                        className={`px-4 py-3 text-sm text-[#181818] cursor-pointer ${editingCell?.contactId === contact.id && editingCell?.field === "email" ? "bg-blue-50" : ""}`}
+                        onDoubleClick={() => handleCellDoubleClick(contact.id, "email", contact.email)}
+                      >
+                        {editingCell?.contactId === contact.id && editingCell?.field === "email" ? (
+                          <input
+                            type="text"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={() => handleCellBlur(contact.id, "email")}
+                            onKeyDown={(e) => handleCellKeyDown(e, contact.id, "email")}
+                            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          />
+                        ) : (
+                          contact.email || "-"
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-[#181818]">
                         {contact.contact_owner || "-"}

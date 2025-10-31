@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronDown,
@@ -14,10 +14,24 @@ import {
   Settings,
   Crown,
   Upload,
+  X,
   Check,
 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
-export default function OpportunityDetail() {
+interface OpportunityDetailProps {
+  opportunityId: number;
+}
+
+export default function OpportunityDetail({
+  opportunityId,
+}: OpportunityDetailProps) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [opportunity, setOpportunity] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isAboutExpanded, setIsAboutExpanded] = useState(true);
   const [isStatusExpanded, setIsStatusExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
@@ -25,6 +39,115 @@ export default function OpportunityDetail() {
   const [isGuidanceExpanded, setIsGuidanceExpanded] = useState(true);
   const [isContactRolesExpanded, setIsContactRolesExpanded] = useState(true);
   const [isFilesExpanded, setIsFilesExpanded] = useState(true);
+  const [isInlineEditing, setIsInlineEditing] = useState(false);
+
+  // Form state for inline editing
+  const [editFormData, setEditFormData] = useState<any>({});
+
+  // Fetch opportunity data
+  const fetchOpportunity = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `/api/v1/sobjects/opportunities/${opportunityId}`
+      );
+      setOpportunity(response.data);
+      setEditFormData({
+        opportunity_name: response.data.opportunity_name || "",
+        amount: response.data.amount || "",
+        close_date: response.data.close_date || "",
+        stage: response.data.stage || "",
+        description: response.data.description || "",
+        probability: response.data.probability || "",
+        forecast_category: response.data.forecast_category || "",
+        next_step: response.data.next_step || "",
+      });
+    } catch (error) {
+      console.error("Error fetching opportunity:", error);
+      showToast("Failed to load opportunity. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOpportunity();
+  }, [opportunityId]);
+
+  // Handle inline edit save
+  const handleInlineSave = async () => {
+    try {
+      await axios.patch(
+        `/api/v1/sobjects/opportunities/${opportunityId}`,
+        editFormData
+      );
+      showToast("Opportunity updated successfully.", {
+        label: "Undo",
+        onClick: () => console.log("Undo opportunity update"),
+      });
+      setIsInlineEditing(false);
+      fetchOpportunity();
+    } catch (error) {
+      console.error("Error updating opportunity:", error);
+      showToast("Failed to update opportunity. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this opportunity?")) return;
+
+    try {
+      await axios.delete(`/api/v1/sobjects/opportunities/${opportunityId}`);
+      showToast("Opportunity deleted successfully.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      router.push("/sales");
+    } catch (error) {
+      console.error("Error deleting opportunity:", error);
+      showToast("Failed to delete opportunity. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Format close date (just date, no time)
+  const formatCloseDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB");
+  };
+
+  // Format amount
+  const formatAmount = (amount: number | string) => {
+    if (!amount) return "-";
+    return `₹${Number(amount).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
 
   const stages = [
     { name: "Qualification", completed: true },
@@ -33,6 +156,22 @@ export default function OpportunityDetail() {
     { name: "Negotiate", completed: false },
     { name: "Closed", completed: false },
   ];
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
+        <p className="text-[#706e6b]">Loading opportunity...</p>
+      </div>
+    );
+  }
+
+  if (!opportunity) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
+        <p className="text-[#706e6b]">Opportunity not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-[#f3f2f2]">
@@ -45,27 +184,65 @@ export default function OpportunityDetail() {
             </div>
             <div>
               <p className="text-xs text-[#706e6b]">Opportunity</p>
-              <h1 className="text-2xl font-normal text-[#181818]">
-                Rishab Nagwani erew
-              </h1>
+              {isInlineEditing ? (
+                <input
+                  type="text"
+                  value={editFormData.opportunity_name}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      opportunity_name: e.target.value,
+                    })
+                  }
+                  className="text-2xl font-normal text-[#181818] border border-[#0176d3] rounded px-2 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                />
+              ) : (
+                <h1 className="text-2xl font-normal text-[#181818]">
+                  {opportunity.opportunity_name}
+                </h1>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              New Event
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              New Task
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              Edit
-            </Button>
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0 border-[#dddbda] bg-white hover:bg-gray-50"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </Button>
+            {isInlineEditing ? (
+              <>
+                <Button
+                  onClick={() => setIsInlineEditing(false)}
+                  className="bg-white text-[#706e6b] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInlineSave}
+                  className="bg-[#0176d3] text-white hover:bg-[#014486] h-9 px-4 text-sm rounded"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  New Event
+                </Button>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  New Task
+                </Button>
+                <Button
+                  onClick={() => setIsInlineEditing(true)}
+                  className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  className="bg-white text-red-600 hover:bg-red-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -180,18 +357,48 @@ export default function OpportunityDetail() {
             {/* Top Summary */}
             <div className="space-y-3 pb-6 border-b border-[#dddbda]">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-xs text-[#706e6b] mb-1">Amount</p>
-                  <p className="text-sm text-[#181818]">₹56,000.00</p>
+                  {isInlineEditing ? (
+                    <input
+                      type="number"
+                      value={editFormData.amount}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          amount: e.target.value,
+                        })
+                      }
+                      className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                    />
+                  ) : (
+                    <p className="text-sm text-[#181818]">
+                      {formatAmount(opportunity.amount)}
+                    </p>
+                  )}
                 </div>
-                <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
               </div>
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-xs text-[#706e6b] mb-1">Description</p>
-                  <p className="text-sm text-[#181818]">sdfdsfdsfdsf</p>
+                  {isInlineEditing ? (
+                    <textarea
+                      value={editFormData.description}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                    />
+                  ) : (
+                    <p className="text-sm text-[#181818]">
+                      {opportunity.description || "-"}
+                    </p>
+                  )}
                 </div>
-                <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
               </div>
               <div className="flex items-start justify-between">
                 <div>
@@ -206,11 +413,10 @@ export default function OpportunityDetail() {
                       href="#"
                       className="text-sm text-[#0176d3] hover:underline"
                     >
-                      Rishab Nagwani
+                      {opportunity.opportunity_owner || "-"}
                     </a>
                   </div>
                 </div>
-                <User className="w-4 h-4 text-[#0176d3] cursor-pointer" />
               </div>
             </div>
 
@@ -230,36 +436,111 @@ export default function OpportunityDetail() {
               {isStatusExpanded && (
                 <div className="space-y-4 pl-7">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Stage</p>
-                      <p className="text-sm text-[#181818]">Propose</p>
+                      {isInlineEditing ? (
+                        <select
+                          value={editFormData.stage}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              stage: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        >
+                          <option value="">--None--</option>
+                          <option value="Qualification">Qualification</option>
+                          <option value="Needs Analysis">Needs Analysis</option>
+                          <option value="Propose">Propose</option>
+                          <option value="Negotiate">Negotiate</option>
+                          <option value="Closed Won">Closed Won</option>
+                          <option value="Closed Lost">Closed Lost</option>
+                        </select>
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {opportunity.stage || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Probability (%)
                       </p>
-                      <p className="text-sm text-[#181818]">50%</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="number"
+                          value={editFormData.probability}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              probability: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {opportunity.probability
+                            ? `${opportunity.probability}%`
+                            : "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Forecast Category
                       </p>
-                      <p className="text-sm text-[#181818]">Best Case</p>
+                      {isInlineEditing ? (
+                        <select
+                          value={editFormData.forecast_category}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              forecast_category: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        >
+                          <option value="">--None--</option>
+                          <option value="Pipeline">Pipeline</option>
+                          <option value="Best Case">Best Case</option>
+                          <option value="Commit">Commit</option>
+                          <option value="Omitted">Omitted</option>
+                          <option value="Closed">Closed</option>
+                        </select>
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {opportunity.forecast_category || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Next Step</p>
-                      <p className="text-sm text-[#181818]">asdasdasdasd</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.next_step}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              next_step: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {opportunity.next_step || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                 </div>
               )}
@@ -281,18 +562,31 @@ export default function OpportunityDetail() {
               {isAboutExpanded && (
                 <div className="space-y-4 pl-7">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Opportunity Name
                       </p>
-                      <p className="text-sm text-[#181818]">
-                        Rishab Nagwani erew
-                      </p>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.opportunity_name}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              opportunity_name: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {opportunity.opportunity_name || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Account Name
                       </p>
@@ -300,31 +594,75 @@ export default function OpportunityDetail() {
                         href="#"
                         className="text-sm text-[#0176d3] hover:underline"
                       >
-                        asdasd
+                        {opportunity.account_name || "-"}
                       </a>
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Close Date</p>
-                      <p className="text-sm text-[#181818]">30/10/2025</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="date"
+                          value={editFormData.close_date}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              close_date: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {formatCloseDate(opportunity.close_date)}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Amount</p>
-                      <p className="text-sm text-[#181818]">₹56,000.00</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="number"
+                          value={editFormData.amount}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              amount: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {formatAmount(opportunity.amount)}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Description</p>
-                      <p className="text-sm text-[#181818]">sdfdsfdsfdsf</p>
+                      {isInlineEditing ? (
+                        <textarea
+                          value={editFormData.description}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {opportunity.description || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                 </div>
               )}
@@ -357,12 +695,12 @@ export default function OpportunityDetail() {
                         href="#"
                         className="text-sm text-[#0176d3] hover:underline"
                       >
-                        Rishab Nagwani
+                        {opportunity.opportunity_owner || "-"}
                       </a>
-                      <span className="text-sm text-[#706e6b]">
-                        , 28/10/2025, 2:02 pm
-                      </span>
                     </div>
+                    <p className="text-xs text-[#706e6b] mt-1">
+                      {formatDate(opportunity.created_at)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-[#706e6b] mb-1">
@@ -376,12 +714,12 @@ export default function OpportunityDetail() {
                         href="#"
                         className="text-sm text-[#0176d3] hover:underline"
                       >
-                        Rishab Nagwani
+                        {opportunity.opportunity_owner || "-"}
                       </a>
-                      <span className="text-sm text-[#706e6b]">
-                        , 28/10/2025, 2:02 pm
-                      </span>
                     </div>
+                    <p className="text-xs text-[#706e6b] mt-1">
+                      {formatDate(opportunity.updated_at)}
+                    </p>
                   </div>
                 </div>
               )}

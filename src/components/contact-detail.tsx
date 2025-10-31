@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronDown,
@@ -14,13 +14,135 @@ import {
   Settings,
   Upload,
   Building2,
+  X,
+  Check,
 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
-export default function ContactDetail() {
+interface ContactDetailProps {
+  contactId: number;
+}
+
+export default function ContactDetail({ contactId }: ContactDetailProps) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [contact, setContact] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isAboutExpanded, setIsAboutExpanded] = useState(true);
   const [isGetInTouchExpanded, setIsGetInTouchExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [isUpcomingExpanded, setIsUpcomingExpanded] = useState(true);
+  const [isInlineEditing, setIsInlineEditing] = useState(false);
+
+  // Form state for inline editing
+  const [editFormData, setEditFormData] = useState<any>({});
+
+  // Fetch contact data
+  const fetchContact = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`/api/v1/sobjects/contacts/${contactId}`);
+      setContact(response.data);
+      setEditFormData({
+        first_name: response.data.first_name || "",
+        last_name: response.data.last_name || "",
+        email: response.data.email || "",
+        phone: response.data.phone || "",
+        title: response.data.title || "",
+        description: response.data.description || "",
+        mailing_street: response.data.mailing_street || "",
+        mailing_city: response.data.mailing_city || "",
+        mailing_state_province: response.data.mailing_state_province || "",
+        mailing_zip_postal_code: response.data.mailing_zip_postal_code || "",
+        mailing_country: response.data.mailing_country || "",
+      });
+    } catch (error) {
+      console.error("Error fetching contact:", error);
+      showToast("Failed to load contact. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContact();
+  }, [contactId]);
+
+  // Handle inline edit save
+  const handleInlineSave = async () => {
+    try {
+      await axios.patch(`/api/v1/sobjects/contacts/${contactId}`, editFormData);
+      showToast("Contact updated successfully.", {
+        label: "Undo",
+        onClick: () => console.log("Undo contact update"),
+      });
+      setIsInlineEditing(false);
+      fetchContact();
+    } catch (error) {
+      console.error("Error updating contact:", error);
+      showToast("Failed to update contact. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this contact?")) return;
+
+    try {
+      await axios.delete(`/api/v1/sobjects/contacts/${contactId}`);
+      showToast("Contact deleted successfully.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      router.push("/contacts");
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      showToast("Failed to delete contact. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
+        <p className="text-[#706e6b]">Loading contact...</p>
+      </div>
+    );
+  }
+
+  if (!contact) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
+        <p className="text-[#706e6b]">Contact not found.</p>
+      </div>
+    );
+  }
+
+  const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unnamed Contact";
 
   return (
     <div className="h-full flex flex-col bg-[#f3f2f2]">
@@ -33,28 +155,75 @@ export default function ContactDetail() {
             </div>
             <div>
               <p className="text-xs text-[#706e6b]">Contact</p>
-              <h1 className="text-2xl font-normal text-[#181818]">
-                Ms. meow Nagwani
-              </h1>
+              {isInlineEditing ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editFormData.first_name}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, first_name: e.target.value })
+                    }
+                    placeholder="First Name"
+                    className="text-2xl font-normal text-[#181818] border border-[#0176d3] rounded px-2 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                  />
+                  <input
+                    type="text"
+                    value={editFormData.last_name}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, last_name: e.target.value })
+                    }
+                    placeholder="Last Name"
+                    className="text-2xl font-normal text-[#181818] border border-[#0176d3] rounded px-2 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                  />
+                </div>
+              ) : (
+                <h1 className="text-2xl font-normal text-[#181818]">
+                  {fullName}
+                </h1>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              <User className="w-4 h-4 mr-2" />
-              Follow
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              New Opportunity
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              Edit
-            </Button>
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0 border-[#dddbda] bg-white hover:bg-gray-50"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </Button>
+            {isInlineEditing ? (
+              <>
+                <Button
+                  onClick={() => setIsInlineEditing(false)}
+                  className="bg-white text-[#706e6b] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInlineSave}
+                  className="bg-[#0176d3] text-white hover:bg-[#014486] h-9 px-4 text-sm rounded"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  <User className="w-4 h-4 mr-2" />
+                  Follow
+                </Button>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  New Opportunity
+                </Button>
+                <Button
+                  onClick={() => setIsInlineEditing(true)}
+                  className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  className="bg-white text-red-600 hover:bg-red-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -80,46 +249,102 @@ export default function ContactDetail() {
               {isAboutExpanded && (
                 <div className="space-y-4 pl-7">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-[#706e6b] mb-1">Name</p>
-                      <p className="text-sm text-[#181818]">Ms. meow Nagwani</p>
+                    <div className="flex-1">
+                      <p className="text-xs text-[#706e6b] mb-1">First Name</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.first_name}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              first_name: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {contact.first_name || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
+                      <p className="text-xs text-[#706e6b] mb-1">Last Name</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.last_name}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              last_name: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {contact.last_name || "-"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Account Name
                       </p>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        asdasd
-                      </a>
+                      <p className="text-sm text-[#181818]">
+                        {contact.account_name || "-"}
+                      </p>
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Title</p>
-                      <p className="text-sm text-[#181818]">dqfdqdfq</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.title}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              title: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {contact.title || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-[#706e6b] mb-1">Reports To</p>
-                      <p className="text-sm text-[#706e6b]">--</p>
-                    </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Description</p>
-                      <p className="text-sm text-[#181818]">dfqfdqdfqfq</p>
+                      {isInlineEditing ? (
+                        <textarea
+                          value={editFormData.description}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {contact.description || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
                     <div>
@@ -127,18 +352,17 @@ export default function ContactDetail() {
                         Contact Owner
                       </p>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
+                        <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs">
+                          {contact.contact_owner
+                            ?.split(" ")
+                            .map((n: string) => n[0])
+                            .join("")}
                         </div>
-                        <a
-                          href="#"
-                          className="text-sm text-[#0176d3] hover:underline"
-                        >
-                          Rishab Nagwani
-                        </a>
+                        <p className="text-sm text-[#0176d3]">
+                          {contact.contact_owner || "-"}
+                        </p>
                       </div>
                     </div>
-                    <User className="w-4 h-4 text-[#0176d3] cursor-pointer" />
                   </div>
                 </div>
               )}
@@ -162,68 +386,141 @@ export default function ContactDetail() {
               {isGetInTouchExpanded && (
                 <div className="space-y-4 pl-7">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Phone</p>
-                      <a
-                        href="tel:09833014890"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        09833014890
-                      </a>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.phone}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              phone: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : contact.phone ? (
+                        <a
+                          href={`tel:${contact.phone}`}
+                          className="text-sm text-[#0176d3] hover:underline"
+                        >
+                          {contact.phone}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-[#181818]">-</p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Email</p>
-                      <a
-                        href="mailto:nagwanirishab@gmail.com"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        nagwanirishab@gmail.com
-                      </a>
+                      {isInlineEditing ? (
+                        <input
+                          type="email"
+                          value={editFormData.email}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              email: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : contact.email ? (
+                        <a
+                          href={`mailto:${contact.email}`}
+                          className="text-sm text-[#0176d3] hover:underline"
+                        >
+                          {contact.email}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-[#181818]">-</p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Mailing Address
                       </p>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        B-302 Greenwoods CHS, Near WEH Metro Station,
-                        Andheri-Kur...
-                      </a>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        Mumbai 400093
-                      </a>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        Albania
-                      </a>
-                      {/* Map */}
-                      <div className="mt-2 w-full h-32 bg-[#e5e7eb] rounded relative overflow-hidden">
-                        <div className="absolute inset-0 bg-linear-to-br from-[#a7f3d0] via-[#bfdbfe] to-[#ddd6fe]">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                            <div className="w-6 h-6 bg-red-500 rounded-full relative">
-                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-8 border-t-red-500"></div>
-                            </div>
-                          </div>
-                          <div className="absolute top-4 left-4 bg-white px-2 py-1 rounded text-xs font-medium">
-                            E952
-                          </div>
+                      {isInlineEditing ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Street"
+                            value={editFormData.mailing_street}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                mailing_street: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={editFormData.mailing_city}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                mailing_city: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="State/Province"
+                            value={editFormData.mailing_state_province}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                mailing_state_province: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Zip/Postal Code"
+                            value={editFormData.mailing_zip_postal_code}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                mailing_zip_postal_code: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Country"
+                            value={editFormData.mailing_country}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                mailing_country: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
                         </div>
-                      </div>
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {[
+                            contact.mailing_street,
+                            contact.mailing_city,
+                            contact.mailing_state_province,
+                            contact.mailing_zip_postal_code,
+                            contact.mailing_country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                 </div>
               )}
@@ -246,40 +543,28 @@ export default function ContactDetail() {
               </button>
               {isHistoryExpanded && (
                 <div className="space-y-4 pl-7">
-                  <div>
-                    <p className="text-xs text-[#706e6b] mb-1">Created By</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        Rishab Nagwani
-                      </a>
-                      <span className="text-sm text-[#706e6b]">
-                        , 28/10/2025, 2:01 pm
-                      </span>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-[#706e6b] mb-1">Created By</p>
+                      <p className="text-sm text-[#0176d3]">
+                        {contact.contact_owner || "-"}
+                      </p>
+                      <p className="text-xs text-[#706e6b]">
+                        {formatDate(contact.created_at)}
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#706e6b] mb-1">
-                      Last Modified By
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        Rishab Nagwani
-                      </a>
-                      <span className="text-sm text-[#706e6b]">
-                        , 28/10/2025, 2:01 pm
-                      </span>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-[#706e6b] mb-1">
+                        Last Modified By
+                      </p>
+                      <p className="text-sm text-[#0176d3]">
+                        {contact.contact_owner || "-"}
+                      </p>
+                      <p className="text-xs text-[#706e6b]">
+                        {formatDate(contact.updated_at)}
+                      </p>
                     </div>
                   </div>
                 </div>

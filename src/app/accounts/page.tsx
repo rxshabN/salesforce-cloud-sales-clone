@@ -3,6 +3,7 @@
 import { Search, ChevronDown, Settings, Grid3x3, RefreshCw, Pin, Edit, PieChart, Filter, X, MoreVertical, AlertCircle, Trash2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import Link from "next/link"
 import ResizableTable from "@/components/resizable-table"
 import { ButtonGroup, IconButtonGroup, IconButton, GroupedIconButtons } from "@/components/ui/button-group"
 import { useToast } from "@/components/toast-provider"
@@ -53,6 +54,10 @@ export default function AccountsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{ accountId: number; field: string } | null>(null)
+  const [editingValue, setEditingValue] = useState("")
 
   const hasRecords = accounts.length > 0
 
@@ -166,7 +171,7 @@ export default function AccountsPage() {
         website: accountFormData.website || null,
         type: accountFormData.type || null,
         description: accountFormData.description || null,
-        parent_account_id: null, // TODO: Implement parent account lookup
+        parent_account_id: null,
         account_owner: "Rishab Nagwani",
         phone: accountFormData.phone || null,
         billing_street: accountFormData.billingStreet || null,
@@ -275,7 +280,7 @@ export default function AccountsPage() {
         website: account.website || "",
         type: account.type || "",
         description: account.description || "",
-        parentAccount: "", // TODO: Load parent account name
+        parentAccount: "",
         phone: account.phone || "",
         billingCountry: account.billing_country || "",
         billingStreet: account.billing_street || "",
@@ -329,6 +334,57 @@ export default function AccountsPage() {
         onClick: () => {},
       })
     }
+  }
+
+  // Inline editing handlers
+  const handleCellDoubleClick = (accountId: number, field: string, currentValue: string) => {
+    setEditingCell({ accountId, field })
+    setEditingValue(currentValue || "")
+  }
+
+  const handleCellSave = async (accountId: number, field: string) => {
+    if (!editingCell) return
+
+    try {
+      const updateData: any = {}
+      if (field === "phone") {
+        updateData.phone = editingValue
+      } else if (field === "name") {
+        updateData.name = editingValue
+      }
+
+      await axios.patch(`/api/v1/sobjects/accounts/${accountId}`, updateData)
+      showToast(`Account ${field} updated successfully.`, {
+        label: "Undo",
+        onClick: () => console.log("Undo inline edit"),
+      })
+      setEditingCell(null)
+      setEditingValue("")
+      fetchAccounts()
+    } catch (error) {
+      console.error("Error updating account:", error)
+      showToast("Failed to update account. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      })
+      setEditingCell(null)
+      setEditingValue("")
+    }
+  }
+
+  const handleCellKeyDown = (e: React.KeyboardEvent, accountId: number, field: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleCellSave(accountId, field)
+    } else if (e.key === "Escape") {
+      setEditingCell(null)
+      setEditingValue("")
+    }
+  }
+
+  const handleCellBlur = (accountId: number, field: string) => {
+    // Save on blur
+    handleCellSave(accountId, field)
   }
 
   const actionButtons = [
@@ -478,13 +534,43 @@ export default function AccountsPage() {
                   <td className="w-12 px-4 py-3">
                     <input type="checkbox" className="rounded border-gray-300" />
                   </td>
-                  <td className="px-4 py-3">
-                    <a href="#" className="text-[#0176d3] hover:underline">
-                      {account.name}
-                    </a>
+                  <td
+                    className={`px-4 py-3 cursor-pointer ${editingCell?.accountId === account.id && editingCell?.field === "name" ? "bg-blue-50" : ""}`}
+                    onDoubleClick={() => handleCellDoubleClick(account.id, "name", account.name)}
+                  >
+                    {editingCell?.accountId === account.id && editingCell?.field === "name" ? (
+                      <input
+                        type="text"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        onBlur={() => handleCellBlur(account.id, "name")}
+                        onKeyDown={(e) => handleCellKeyDown(e, account.id, "name")}
+                        className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <Link href={`/accounts/${account.id}`} className="text-[#0176d3] hover:underline">
+                        {account.name}
+                      </Link>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {account.phone || "-"}
+                  <td
+                    className={`px-4 py-3 text-sm text-gray-700 cursor-pointer ${editingCell?.accountId === account.id && editingCell?.field === "phone" ? "bg-blue-50" : ""}`}
+                    onDoubleClick={() => handleCellDoubleClick(account.id, "phone", account.phone)}
+                  >
+                    {editingCell?.accountId === account.id && editingCell?.field === "phone" ? (
+                      <input
+                        type="text"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        onBlur={() => handleCellBlur(account.id, "phone")}
+                        onKeyDown={(e) => handleCellKeyDown(e, account.id, "phone")}
+                        className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                    ) : (
+                      account.phone || "-"
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">
                     {account.account_owner || "-"}

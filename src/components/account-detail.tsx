@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronDown,
@@ -13,15 +13,139 @@ import {
   AlertTriangle,
   Settings,
   Building2,
+  X,
+  Check,
 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
-export default function AccountDetail() {
+interface AccountDetailProps {
+  accountId: number;
+}
+
+export default function AccountDetail({ accountId }: AccountDetailProps) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [account, setAccount] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isAboutExpanded, setIsAboutExpanded] = useState(true);
   const [isGetInTouchExpanded, setIsGetInTouchExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [isUpcomingExpanded, setIsUpcomingExpanded] = useState(true);
   const [isContactsExpanded, setIsContactsExpanded] = useState(true);
   const [isOpportunitiesExpanded, setIsOpportunitiesExpanded] = useState(true);
+  const [isInlineEditing, setIsInlineEditing] = useState(false);
+
+  // Form state for inline editing
+  const [editFormData, setEditFormData] = useState<any>({});
+
+  // Fetch account data
+  const fetchAccount = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`/api/v1/sobjects/accounts/${accountId}`);
+      setAccount(response.data);
+      setEditFormData({
+        name: response.data.name || "",
+        website: response.data.website || "",
+        type: response.data.type || "",
+        description: response.data.description || "",
+        phone: response.data.phone || "",
+        billing_street: response.data.billing_street || "",
+        billing_city: response.data.billing_city || "",
+        billing_state_province: response.data.billing_state_province || "",
+        billing_zip_postal_code: response.data.billing_zip_postal_code || "",
+        billing_country: response.data.billing_country || "",
+        shipping_street: response.data.shipping_street || "",
+        shipping_city: response.data.shipping_city || "",
+        shipping_state_province: response.data.shipping_state_province || "",
+        shipping_zip_postal_code: response.data.shipping_zip_postal_code || "",
+        shipping_country: response.data.shipping_country || "",
+      });
+    } catch (error) {
+      console.error("Error fetching account:", error);
+      showToast("Failed to load account. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccount();
+  }, [accountId]);
+
+  // Handle inline edit save
+  const handleInlineSave = async () => {
+    try {
+      await axios.patch(`/api/v1/sobjects/accounts/${accountId}`, editFormData);
+      showToast("Account updated successfully.", {
+        label: "Undo",
+        onClick: () => console.log("Undo account update"),
+      });
+      setIsInlineEditing(false);
+      fetchAccount();
+    } catch (error) {
+      console.error("Error updating account:", error);
+      showToast("Failed to update account. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this account?")) return;
+
+    try {
+      await axios.delete(`/api/v1/sobjects/accounts/${accountId}`);
+      showToast("Account deleted successfully.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      router.push("/accounts");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      showToast("Failed to delete account. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
+        <p className="text-[#706e6b]">Loading account...</p>
+      </div>
+    );
+  }
+
+  if (!account) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
+        <p className="text-[#706e6b]">Account not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-[#f3f2f2]">
@@ -34,29 +158,66 @@ export default function AccountDetail() {
             </div>
             <div>
               <p className="text-xs text-[#706e6b]">Account</p>
-              <h1 className="text-2xl font-normal text-[#181818]">asdasd</h1>
+              {isInlineEditing ? (
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, name: e.target.value })
+                  }
+                  className="text-2xl font-normal text-[#181818] border border-[#0176d3] rounded px-2 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                />
+              ) : (
+                <h1 className="text-2xl font-normal text-[#181818]">
+                  {account.name}
+                </h1>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              <User className="w-4 h-4 mr-2" />
-              Follow
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              New Contact
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              New Opportunity
-            </Button>
-            <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-              Edit
-            </Button>
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0 border-[#dddbda] bg-white hover:bg-gray-50"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </Button>
+            {isInlineEditing ? (
+              <>
+                <Button
+                  onClick={() => setIsInlineEditing(false)}
+                  className="bg-white text-[#706e6b] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInlineSave}
+                  className="bg-[#0176d3] text-white hover:bg-[#014486] h-9 px-4 text-sm rounded"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  <User className="w-4 h-4 mr-2" />
+                  Follow
+                </Button>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  New Contact
+                </Button>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  New Opportunity
+                </Button>
+                <Button
+                  onClick={() => setIsInlineEditing(true)}
+                  className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  className="bg-white text-red-600 hover:bg-red-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
+                >
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -82,48 +243,105 @@ export default function AccountDetail() {
               {isAboutExpanded && (
                 <div className="space-y-4 pl-7">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Account Name
                       </p>
-                      <p className="text-sm text-[#181818]">asdasd</p>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.name}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              name: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {account.name || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Website</p>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        asdasd
-                      </a>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.website}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              website: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : account.website ? (
+                        <a
+                          href={account.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-[#0176d3] hover:underline"
+                        >
+                          {account.website}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-[#181818]">-</p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Type</p>
-                      <p className="text-sm text-[#181818]">Analyst</p>
+                      {isInlineEditing ? (
+                        <select
+                          value={editFormData.type}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              type: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        >
+                          <option value="">--None--</option>
+                          <option value="Customer">Customer</option>
+                          <option value="Partner">Partner</option>
+                          <option value="Prospect">Prospect</option>
+                        </select>
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {account.type || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Description</p>
-                      <p className="text-sm text-[#181818]">123123</p>
+                      {isInlineEditing ? (
+                        <textarea
+                          value={editFormData.description}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {account.description || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-[#706e6b] mb-1">
-                        Parent Account
-                      </p>
-                      <p className="text-sm text-[#706e6b]">--</p>
-                    </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
                     <div>
@@ -131,18 +349,17 @@ export default function AccountDetail() {
                         Account Owner
                       </p>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
+                        <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs">
+                          {account.account_owner
+                            ?.split(" ")
+                            .map((n: string) => n[0])
+                            .join("")}
                         </div>
-                        <a
-                          href="#"
-                          className="text-sm text-[#0176d3] hover:underline"
-                        >
-                          Rishab Nagwani
-                        </a>
+                        <p className="text-sm text-[#0176d3]">
+                          {account.account_owner || "-"}
+                        </p>
                       </div>
                     </div>
-                    <User className="w-4 h-4 text-[#0176d3] cursor-pointer" />
                   </div>
                 </div>
               )}
@@ -166,96 +383,192 @@ export default function AccountDetail() {
               {isGetInTouchExpanded && (
                 <div className="space-y-4 pl-7">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">Phone</p>
-                      <a
-                        href="tel:456456456"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        456456456
-                      </a>
+                      {isInlineEditing ? (
+                        <input
+                          type="text"
+                          value={editFormData.phone}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              phone: e.target.value,
+                            })
+                          }
+                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                        />
+                      ) : (
+                        <p className="text-sm text-[#0176d3]">
+                          {account.phone || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Billing Address
                       </p>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        B-302 Greenwoods CHS, Near WEH Metro Station,
-                        Andheri-Kur...
-                      </a>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        Mumbai 400093
-                      </a>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        Afghanistan
-                      </a>
-                      {/* Map */}
-                      <div className="mt-2 w-full h-32 bg-[#e5e7eb] rounded relative overflow-hidden">
-                        <div className="absolute inset-0 bg-linear-to-br from-[#a7f3d0] via-[#bfdbfe] to-[#ddd6fe]">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                            <div className="w-6 h-6 bg-red-500 rounded-full relative">
-                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-8 border-t-red-500"></div>
-                            </div>
-                          </div>
-                          <div className="absolute top-4 left-4 bg-white px-2 py-1 rounded text-xs font-medium">
-                            E952
-                          </div>
+                      {isInlineEditing ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Street"
+                            value={editFormData.billing_street}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                billing_street: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={editFormData.billing_city}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                billing_city: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="State/Province"
+                            value={editFormData.billing_state_province}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                billing_state_province: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Zip/Postal Code"
+                            value={editFormData.billing_zip_postal_code}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                billing_zip_postal_code: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Country"
+                            value={editFormData.billing_country}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                billing_country: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
                         </div>
-                      </div>
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {[
+                            account.billing_street,
+                            account.billing_city,
+                            account.billing_state_province,
+                            account.billing_zip_postal_code,
+                            account.billing_country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="text-xs text-[#706e6b] mb-1">
                         Shipping Address
                       </p>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        B-302 Greenwoods CHS, Near WEH Metro Station,
-                        Andheri-Kur...
-                      </a>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        Mumbai 400093
-                      </a>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline block"
-                      >
-                        Aland Islands
-                      </a>
-                      {/* Map */}
-                      <div className="mt-2 w-full h-32 bg-[#e5e7eb] rounded relative overflow-hidden">
-                        <div className="absolute inset-0 bg-linear-to-br from-[#a7f3d0] via-[#bfdbfe] to-[#ddd6fe]">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                            <div className="w-6 h-6 bg-red-500 rounded-full relative">
-                              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-8 border-t-red-500"></div>
-                            </div>
-                          </div>
-                          <div className="absolute top-4 left-4 bg-white px-2 py-1 rounded text-xs font-medium">
-                            E952
-                          </div>
+                      {isInlineEditing ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Street"
+                            value={editFormData.shipping_street}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                shipping_street: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={editFormData.shipping_city}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                shipping_city: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="State/Province"
+                            value={editFormData.shipping_state_province}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                shipping_state_province: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Zip/Postal Code"
+                            value={editFormData.shipping_zip_postal_code}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                shipping_zip_postal_code: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Country"
+                            value={editFormData.shipping_country}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                shipping_country: e.target.value,
+                              })
+                            }
+                            className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          />
                         </div>
-                      </div>
+                      ) : (
+                        <p className="text-sm text-[#181818]">
+                          {[
+                            account.shipping_street,
+                            account.shipping_city,
+                            account.shipping_state_province,
+                            account.shipping_zip_postal_code,
+                            account.shipping_country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "-"}
+                        </p>
+                      )}
                     </div>
-                    <Pencil className="w-4 h-4 text-[#706e6b] cursor-pointer" />
                   </div>
                 </div>
               )}
@@ -278,40 +591,28 @@ export default function AccountDetail() {
               </button>
               {isHistoryExpanded && (
                 <div className="space-y-4 pl-7">
-                  <div>
-                    <p className="text-xs text-[#706e6b] mb-1">Created By</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        Rishab Nagwani
-                      </a>
-                      <span className="text-sm text-[#706e6b]">
-                        , 28/10/2025, 2:01 pm
-                      </span>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-[#706e6b] mb-1">Created By</p>
+                      <p className="text-sm text-[#0176d3]">
+                        {account.account_owner || "-"}
+                      </p>
+                      <p className="text-xs text-[#706e6b]">
+                        {formatDate(account.created_at)}
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#706e6b] mb-1">
-                      Last Modified By
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        Rishab Nagwani
-                      </a>
-                      <span className="text-sm text-[#706e6b]">
-                        , 28/10/2025, 2:01 pm
-                      </span>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-[#706e6b] mb-1">
+                        Last Modified By
+                      </p>
+                      <p className="text-sm text-[#0176d3]">
+                        {account.account_owner || "-"}
+                      </p>
+                      <p className="text-xs text-[#706e6b]">
+                        {formatDate(account.updated_at)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -319,322 +620,98 @@ export default function AccountDetail() {
             </div>
           </div>
 
-          {/* Middle Column - Activity Timeline */}
-          <div className="bg-[#f3f2f2] p-6">
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 mb-6">
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <Mail className="w-5 h-5 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <Calendar className="w-5 h-5 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <Phone className="w-5 h-5 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <Plus className="w-5 h-5 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
-              </button>
-            </div>
-
-            {/* Filters */}
-            <div className="bg-white rounded p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-[#706e6b]">
-                  Filters: Within 2 months • All activities • All types
-                </p>
-                <button className="text-[#0176d3] hover:underline">
-                  <Settings className="w-4 h-4" />
-                </button>
+          {/* Center Column - Activity Timeline */}
+          <div className="bg-white p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-normal text-[#181818] mb-4">
+                Activity
+              </h2>
+              <div className="flex gap-2 mb-4">
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email
+                </Button>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Log a Call
+                </Button>
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  New Event
+                </Button>
               </div>
-              <div className="flex items-center gap-4 text-sm">
-                <button className="text-[#0176d3] hover:underline">
-                  Refresh
-                </button>
-                <span className="text-[#706e6b]">•</span>
-                <button className="text-[#0176d3] hover:underline">
-                  Expand All
-                </button>
+              <div className="text-center py-8 text-[#706e6b]">
+                No activities yet
               </div>
             </div>
+          </div>
 
+          {/* Right Column - Related Lists */}
+          <div className="bg-white border-l border-[#dddbda] p-6 space-y-6">
             {/* Upcoming & Overdue */}
-            <div className="bg-white rounded mb-4">
+            <div>
               <button
                 onClick={() => setIsUpcomingExpanded(!isUpcomingExpanded)}
-                className="w-full flex items-center gap-2 p-4 text-left"
+                className="flex items-center gap-2 w-full text-left mb-4"
               >
                 <ChevronDown
                   className={`w-5 h-5 text-[#706e6b] transition-transform ${
                     !isUpcomingExpanded ? "-rotate-90" : ""
                   }`}
                 />
-                <h3 className="text-sm font-medium text-[#181818]">
+                <h2 className="text-base font-normal text-[#181818]">
                   Upcoming & Overdue
-                </h3>
+                </h2>
               </button>
               {isUpcomingExpanded && (
-                <div className="px-4 pb-4">
-                  <div className="bg-[#f3f2f2] rounded p-6 text-center">
-                    <p className="text-sm text-[#706e6b] mb-2">
-                      No activities to show.
-                    </p>
-                    <p className="text-xs text-[#706e6b]">
-                      Get started by sending an email, scheduling a task, and
-                      more.
-                    </p>
-                  </div>
-                  <div className="mt-4 bg-[#f3f2f2] rounded p-4 flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-[#706e6b] shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#706e6b]">
-                      To change what's shown, try changing your filters.
-                    </p>
-                  </div>
+                <div className="pl-7 text-sm text-[#706e6b]">
+                  No upcoming tasks
                 </div>
               )}
             </div>
 
-            {/* Show All Activities Button */}
-            <div className="text-center">
-              <Button className="bg-[#0176d3] text-white hover:bg-[#0159a8] h-9 px-6 text-sm rounded">
-                Show All Activities
-              </Button>
-            </div>
-          </div>
-
-          {/* Right Column - Slack Channel & Related Lists */}
-          <div className="bg-white border-l border-[#dddbda] p-6 space-y-6">
-            {/* Slack Channel */}
-            <div className="border border-[#dddbda] rounded p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"
-                      fill="#E01E5A"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-base font-medium text-[#181818]">
-                  Slack Channel
-                </h3>
-              </div>
-              <div className="mb-4">
-                <img
-                  src="/placeholder.svg?height=120&width=300"
-                  alt="Slack collaboration"
-                  className="w-full h-auto"
-                />
-              </div>
-              <h4 className="text-lg font-medium text-[#181818] mb-2">
-                Better collaboration with Slack
-              </h4>
-              <p className="text-sm text-[#706e6b] mb-2">
-                Slack Channels in Salesforce are a place to collaborate and talk
-                about your work. Anyone can follow the conversation here or in
-                the Slack app.{" "}
-                <a href="#" className="text-[#0176d3] hover:underline">
-                  Learn more about Slack
-                </a>
-              </p>
-              <div className="flex items-center gap-2 py-3 border-t border-[#dddbda] mt-4">
-                <button className="text-[#706e6b] hover:text-[#181818]">
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M6 12h12M12 6v12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-                <button className="text-[#706e6b] hover:text-[#181818]">
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M7 10l5 5 5-5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p className="text-xs text-[#706e6b] mt-2">
-                Post an update on this account or @mention someone to start the
-                conversation.
-              </p>
-            </div>
-
             {/* Contacts */}
-            <div className="border border-[#dddbda] rounded">
+            <div>
               <button
                 onClick={() => setIsContactsExpanded(!isContactsExpanded)}
-                className="w-full flex items-center justify-between p-4 border-b border-[#dddbda]"
+                className="flex items-center gap-2 w-full text-left mb-4"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#9b59b6] flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-sm font-medium text-[#181818]">
-                    Contacts (1)
-                  </h3>
-                </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-[#706e6b] transition-transform ${
+                  className={`w-5 h-5 text-[#706e6b] transition-transform ${
                     !isContactsExpanded ? "-rotate-90" : ""
                   }`}
                 />
+                <h2 className="text-base font-normal text-[#181818]">
+                  Contacts
+                </h2>
               </button>
               {isContactsExpanded && (
-                <div className="p-4">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-[#9b59b6] flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline font-medium block"
-                      >
-                        meow Nagwani
-                      </a>
-                      <div className="text-xs text-[#706e6b] space-y-1 mt-1">
-                        <div className="flex items-start">
-                          <span className="w-12 shrink-0">Title:</span>
-                          <span className="flex-1">dgfdgdfg</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-12 shrink-0">Email:</span>
-                          <a
-                            href="mailto:nagwanirishab@gmail.com"
-                            className="text-[#0176d3] hover:underline flex-1"
-                          >
-                            nagwanirishab@gmail.com
-                          </a>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-12 shrink-0">Phone:</span>
-                          <a
-                            href="tel:09833014890"
-                            className="text-[#0176d3] hover:underline flex-1"
-                          >
-                            09833014890
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                    <button className="text-[#706e6b] hover:text-[#181818]">
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="text-right">
-                    <a
-                      href="#"
-                      className="text-sm text-[#0176d3] hover:underline"
-                    >
-                      View All
-                    </a>
-                  </div>
+                <div className="pl-7 text-sm text-[#706e6b]">
+                  No contacts yet
                 </div>
               )}
             </div>
 
             {/* Opportunities */}
-            <div className="border border-[#dddbda] rounded">
+            <div>
               <button
                 onClick={() =>
                   setIsOpportunitiesExpanded(!isOpportunitiesExpanded)
                 }
-                className="w-full flex items-center justify-between p-4 border-b border-[#dddbda]"
+                className="flex items-center gap-2 w-full text-left mb-4"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#f97316] flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-sm font-medium text-[#181818]">
-                    Opportunities (2)
-                  </h3>
-                </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-[#706e6b] transition-transform ${
+                  className={`w-5 h-5 text-[#706e6b] transition-transform ${
                     !isOpportunitiesExpanded ? "-rotate-90" : ""
                   }`}
                 />
+                <h2 className="text-base font-normal text-[#181818]">
+                  Opportunities
+                </h2>
               </button>
               {isOpportunitiesExpanded && (
-                <div className="p-4 space-y-4">
-                  <div>
-                    <a
-                      href="#"
-                      className="text-sm text-[#0176d3] hover:underline font-medium block mb-2"
-                    >
-                      Rishab Nagwani erew
-                    </a>
-                    <div className="text-xs text-[#706e6b] space-y-1">
-                      <div className="flex items-start">
-                        <span className="w-24 shrink-0">Stage:</span>
-                        <span className="flex-1">Propose</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-24 shrink-0">Amount:</span>
-                        <span className="flex-1">₹56,000.00</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-24 shrink-0">Close Date:</span>
-                        <span className="flex-1">30/10/2025</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-[#dddbda] pt-4">
-                    <a
-                      href="#"
-                      className="text-sm text-[#0176d3] hover:underline font-medium block mb-2"
-                    >
-                      Rishab Nagwani
-                    </a>
-                    <div className="text-xs text-[#706e6b] space-y-1">
-                      <div className="flex items-start">
-                        <span className="w-24 shrink-0">Stage:</span>
-                        <span className="flex-1">Closed Lost</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-24 shrink-0">Amount:</span>
-                        <span className="flex-1">₹56,000.00</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-24 shrink-0">Close Date:</span>
-                        <span className="flex-1">23/10/2025</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right pt-2">
-                    <a
-                      href="#"
-                      className="text-sm text-[#0176d3] hover:underline"
-                    >
-                      View All
-                    </a>
-                  </div>
+                <div className="pl-7 text-sm text-[#706e6b]">
+                  No opportunities yet
                 </div>
               )}
             </div>

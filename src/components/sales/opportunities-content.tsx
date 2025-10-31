@@ -207,7 +207,7 @@ export default function OpportunitiesContent() {
                 <input type="checkbox" className="rounded border-gray-300" />
               </td>
               <td className="py-3 px-4">
-                <Link href={`/opportunity/${opportunity.id}`} className="text-[#0176d3] hover:underline">
+                <Link href={`/opportunities/${opportunity.id}`} className="text-[#0176d3] hover:underline">
                   {opportunity.opportunityName}
                 </Link>
               </td>

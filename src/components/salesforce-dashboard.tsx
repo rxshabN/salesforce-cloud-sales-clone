@@ -269,7 +269,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const contactData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
@@ -278,7 +278,7 @@ export default function SalesforceDashboard() {
         contact_owner: "Rishab Nagwani", // Default owner
         email: contactFormData.email,
         phone: contactFormData.phone || null,
-        reports_to_contact_id: null, // TODO: Implement contact lookup if needed
+        reports_to_contact_id: null,
         mailing_country: contactFormData.mailingCountry || null,
         mailing_street: contactFormData.mailingStreet || null,
         mailing_city: contactFormData.mailingCity || null,
@@ -315,7 +315,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const contactData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
@@ -324,7 +324,7 @@ export default function SalesforceDashboard() {
         contact_owner: "Rishab Nagwani", // Default owner
         email: contactFormData.email,
         phone: contactFormData.phone || null,
-        reports_to_contact_id: null, // TODO: Implement contact lookup if needed
+        reports_to_contact_id: null,
         mailing_country: contactFormData.mailingCountry || null,
         mailing_street: contactFormData.mailingStreet || null,
         mailing_city: contactFormData.mailingCity || null,
@@ -365,7 +365,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const opportunityData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         name: opportunityFormData.opportunityName,
         amount: opportunityFormData.amount
           ? parseFloat(opportunityFormData.amount)
@@ -413,7 +413,7 @@ export default function SalesforceDashboard() {
       // Note: For now, we're using a placeholder account_id of 1
       // In a real application, you would need to lookup or create the account first
       const opportunityData = {
-        account_id: 1, // TODO: Replace with actual account lookup logic
+        account_id: 1,
         name: opportunityFormData.opportunityName,
         amount: opportunityFormData.amount
           ? parseFloat(opportunityFormData.amount)
@@ -842,8 +842,8 @@ export default function SalesforceDashboard() {
                 </div>
                 <div className="p-4 space-y-3">
                   {/* Lead - Rishab Nagwani erew */}
-                  <a
-                    href="#"
+                  <Link
+                    href="/lead/1"
                     className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
                   >
                     <div className="w-8 h-8 bg-[#f97316] rounded-full flex items-center justify-center shrink-0">
@@ -852,10 +852,10 @@ export default function SalesforceDashboard() {
                     <span className="text-[#0176d3] text-sm hover:underline">
                       Rishab Nagwani erew
                     </span>
-                  </a>
+                  </Link>
                   {/* Contact - meow Nagwani */}
-                  <a
-                    href="#"
+                  <Link
+                    href="/contacts/1"
                     className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
                   >
                     <div className="w-8 h-8 bg-[#9333ea] rounded-full flex items-center justify-center shrink-0">
@@ -864,10 +864,10 @@ export default function SalesforceDashboard() {
                     <span className="text-[#0176d3] text-sm hover:underline">
                       meow Nagwani
                     </span>
-                  </a>
+                  </Link>
                   {/* Account - Rishab Nagwani */}
-                  <a
-                    href="#"
+                  <Link
+                    href="/accounts/1"
                     className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
                   >
                     <div className="w-8 h-8 bg-[#06a59a] rounded-full flex items-center justify-center shrink-0">
@@ -876,10 +876,10 @@ export default function SalesforceDashboard() {
                     <span className="text-[#0176d3] text-sm hover:underline">
                       Rishab Nagwani
                     </span>
-                  </a>
+                  </Link>
                   {/* Opportunity - asdasd */}
-                  <a
-                    href="#"
+                  <Link
+                    href="/opportunities/1"
                     className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
                   >
                     <div className="w-8 h-8 bg-[#3b82f6] rounded-full flex items-center justify-center shrink-0">
@@ -888,7 +888,7 @@ export default function SalesforceDashboard() {
                     <span className="text-[#0176d3] text-sm hover:underline">
                       asdasd
                     </span>
-                  </a>
+                  </Link>
                   {/* Case - Open Cases for Accounts I Own */}
                   <a
                     href="#"
