@@ -31,6 +31,7 @@ import ContactFormModal from "@/components/modals/contact-form-modal";
 import Image from "next/image";
 import LeadFormModal from "./modals/lead-form-modal";
 import OpportunityFormModal from "./modals/opportunity-form-modal";
+import { getOrCreateAccountId } from "@/lib/account-utils";
 
 // Initial state for lead form
 const initialLeadFormData = {
@@ -306,7 +307,9 @@ export default function SalesforceDashboard() {
         number_of_employees: leadFormData.numberOfEmployees
           ? parseInt(leadFormData.numberOfEmployees)
           : null,
-        annual_revenue: leadFormData.annualRevenue || null,
+        annual_revenue: leadFormData.annualRevenue
+          ? parseFloat(leadFormData.annualRevenue)
+          : null,
         lead_source: leadFormData.leadSource || null,
         industry: leadFormData.industry || null,
         lead_owner: "Rishab Nagwani", // Default owner
@@ -358,7 +361,9 @@ export default function SalesforceDashboard() {
         number_of_employees: leadFormData.numberOfEmployees
           ? parseInt(leadFormData.numberOfEmployees)
           : null,
-        annual_revenue: leadFormData.annualRevenue || null,
+        annual_revenue: leadFormData.annualRevenue
+          ? parseFloat(leadFormData.annualRevenue)
+          : null,
         lead_source: leadFormData.leadSource || null,
         industry: leadFormData.industry || null,
         lead_owner: "Rishab Nagwani", // Default owner
@@ -396,6 +401,10 @@ export default function SalesforceDashboard() {
     try {
       const accountId = await getOrCreateAccountId(contactFormData.accountName);
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         return;
       }
       const contactData = {
@@ -433,10 +442,20 @@ export default function SalesforceDashboard() {
       }
     } catch (error) {
       console.error("Error creating contact:", error);
-      showToast("Failed to create contact. Please try again.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
+      if (
+        error instanceof Error &&
+        error.message === "Account Name is required."
+      ) {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else {
+        showToast("Failed to create contact. Please try again.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      }
     }
   };
 
@@ -446,6 +465,10 @@ export default function SalesforceDashboard() {
     try {
       const accountId = await getOrCreateAccountId(contactFormData.accountName);
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         return;
       }
       const contactData = {
@@ -482,60 +505,26 @@ export default function SalesforceDashboard() {
       }
     } catch (error) {
       console.error("Error creating contact:", error);
-      showToast("Failed to create contact. Please try again.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
+      if (
+        error instanceof Error &&
+        error.message === "Account Name is required."
+      ) {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else {
+        showToast("Failed to create contact. Please try again.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      }
     }
   };
 
   const handleContactClose = () => {
     setIsNewContactModalOpen(false);
     resetContactForm();
-  };
-
-  const getOrCreateAccountId = async (
-    accountName: string
-  ): Promise<number | null> => {
-    if (!accountName.trim()) {
-      showToast("Account Name is required.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
-      return null;
-    }
-    try {
-      const searchResponse = await axios.get(
-        `/api/v1/sobjects/accounts?name=${encodeURIComponent(accountName)}`
-      );
-      const accounts = searchResponse.data || [];
-
-      const exactMatch = accounts.find(
-        (acc: any) => acc.name.toLowerCase() === accountName.toLowerCase()
-      );
-      if (exactMatch) {
-        return exactMatch.id;
-      }
-      const createResponse = await axios.post("/api/v1/sobjects/accounts", {
-        name: accountName,
-        account_owner: "Rishab Nagwani",
-      });
-      if (createResponse.status === 201) {
-        showToast(`New account "${accountName}" created.`, {
-          label: "Dismiss",
-          onClick: () => {},
-        });
-        return createResponse.data.id;
-      }
-      throw new Error("Failed to create account");
-    } catch (error) {
-      console.error("Error in getOrCreateAccountId:", error);
-      showToast("Error finding or creating account.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
-      return null;
-    }
   };
 
   const handleOpportunitySave = async () => {
@@ -545,6 +534,10 @@ export default function SalesforceDashboard() {
         opportunityFormData.accountName
       );
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         return;
       }
       const opportunityData = {
@@ -581,10 +574,20 @@ export default function SalesforceDashboard() {
       }
     } catch (error) {
       console.error("Error creating opportunity:", error);
-      showToast("Failed to create opportunity. Please try again.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
+      if (
+        error instanceof Error &&
+        error.message === "Account Name is required."
+      ) {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else {
+        showToast("Failed to create opportunity. Please try again.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      }
     }
   };
 
@@ -595,6 +598,10 @@ export default function SalesforceDashboard() {
         opportunityFormData.accountName
       );
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         return;
       }
       const opportunityData = {
@@ -630,10 +637,20 @@ export default function SalesforceDashboard() {
       }
     } catch (error) {
       console.error("Error creating opportunity:", error);
-      showToast("Failed to create opportunity. Please try again.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
+      if (
+        error instanceof Error &&
+        error.message === "Account Name is required."
+      ) {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else {
+        showToast("Failed to create opportunity. Please try again.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      }
     }
   };
 
@@ -785,7 +802,7 @@ export default function SalesforceDashboard() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 border-black rounded-4xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
+                    className="h-8 w-8 p-0 border-black rounded-3xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
                   >
                     <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>
@@ -916,7 +933,7 @@ export default function SalesforceDashboard() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 border-black rounded-4xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
+                    className="h-8 w-8 p-0 border-black rounded-3xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
                   >
                     <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>
@@ -1049,7 +1066,7 @@ export default function SalesforceDashboard() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 border-black rounded-4xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
+                    className="h-8 w-8 p-0 border-black rounded-3xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
                   >
                     <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>

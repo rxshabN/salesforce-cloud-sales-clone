@@ -47,13 +47,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast, hideToast }}>
       {children}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-9999 flex flex-col gap-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
             className="bg-[#c8f7dc] rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 min-w-[400px] animate-in slide-in-from-top-2 duration-300"
           >
-            <CheckCircle2 className="w-5 h-5 text-[#0b6e4f] flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-[#0b6e4f] shrink-0" />
             <span className="text-[#181818] text-sm flex-1">
               {toast.message}
               {toast.action && (
@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 </>
               )}
             </span>
-            <button onClick={() => hideToast(toast.id)} className="text-[#181818] hover:text-[#0b6e4f] flex-shrink-0">
+            <button onClick={() => hideToast(toast.id)} className="text-[#181818] hover:text-[#0b6e4f] shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>

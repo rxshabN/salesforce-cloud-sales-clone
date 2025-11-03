@@ -91,7 +91,7 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
     accountName: "",
     title: "",
     reportsTo: "",
-    description: "string",
+    description: "",
     email: "",
     phone: "",
     mailingCountry: "",
@@ -176,6 +176,11 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
     if (!opportunityFormData.closeDate.trim()) errors.closeDate = true;
     if (!opportunityFormData.stage || opportunityFormData.stage === "--None--")
       errors.stage = true;
+    if (
+      !opportunityFormData.forecastCategory ||
+      opportunityFormData.forecastCategory === "--None--"
+    )
+      errors.forecastCategory = true;
     setOpportunityErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -270,7 +275,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName || null,
         last_name: contactFormData.lastName,
-        accountName: contactFormData.accountName || null,
         reportsTo: contactFormData.reportsTo || null,
         description: contactFormData.description || null,
         title: contactFormData.title || null,
@@ -796,13 +800,13 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
-                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleInlineSave}
-                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl"
+                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-3xl"
                     >
                       Save
                     </Button>

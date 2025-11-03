@@ -629,13 +629,13 @@ export default function ContactDetail({ contactId }: ContactDetailProps) {
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
-                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleInlineSave}
-                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl"
+                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-3xl"
                     >
                       Save
                     </Button>
@@ -981,7 +981,7 @@ export default function ContactDetail({ contactId }: ContactDetailProps) {
 
             {/* Show All Activities Button */}
             <div className="text-center">
-              <Button className="bg-[#066afe] rounded-4xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
+              <Button className="bg-[#066afe] rounded-3xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
               </Button>
             </div>

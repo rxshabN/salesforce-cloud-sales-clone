@@ -47,13 +47,13 @@ export default function DeleteAccountModal({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="px-4 py-1 border-2 border-black text-[#066afe] hover:bg-gray-50 hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 duration-300 rounded-4xl"
+            className="px-4 py-1 border-2 border-black text-[#066afe] hover:bg-gray-50 hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 duration-300 rounded-3xl"
           >
             Cancel
           </Button>
           <Button
             onClick={handleDelete}
-            className="px-4 py-1 bg-[#066afe] text-white hover:bg-[#066afe] hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 duration-300 rounded-4xl"
+            className="px-4 py-1 bg-[#066afe] text-white hover:bg-[#066afe] hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 duration-300 rounded-3xl"
           >
             Delete
           </Button>

@@ -1,8 +1,6 @@
-//todo implement account, contact and opportunity search functionality along with selection and live results in the divs below the search inputs for the account, contact and opportunity sections
-
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +28,9 @@ import { ChevronRight, Search, X } from "lucide-react";
 import Image from "next/image";
 import axios from "axios";
 import { useToast } from "@/components/toast-provider";
+import { useRouter } from "next/navigation";
+import useDebounce from "@/hooks/use-debounce";
+import { SearchResultList } from "../search-result-list";
 
 interface ConvertLeadModalProps {
   open: boolean;
@@ -59,35 +60,223 @@ export default function ConvertLeadModal({
     "new" | "existing"
   >("new");
   const [dontCreateOpportunity, setDontCreateOpportunity] = useState(false);
-
+  const router = useRouter();
   const [accountName, setAccountName] = useState(leadData.company);
-  const [contactName, setContactName] = useState(
-    `${leadData.salutation} ${leadData.firstName} ${leadData.lastName}`
-  );
   const [opportunityName, setOpportunityName] = useState(`${leadData.name}-`);
   const [convertedStatus, setConvertedStatus] = useState("Qualified");
   const [recordOwner, setRecordOwner] = useState("Rishab Nagwani");
-
-  const [accountSearchQuery, setAccountSearchQuery] = useState("");
-  const [contactSearchQuery, setContactSearchQuery] = useState("");
 
   const [isAccountExpanded, setIsAccountExpanded] = useState(true);
   const [isContactExpanded, setIsContactExpanded] = useState(true);
   const [isOpportunityExpanded, setIsOpportunityExpanded] = useState(true);
 
+  const [accountSearchQuery, setAccountSearchQuery] = useState("");
+  const [contactSearchQuery, setContactSearchQuery] = useState("");
+  const [opportunitySearchQuery, setOpportunitySearchQuery] = useState(""); // [NEW]
+
+  // [NEW] Search Results States
+  const [accountSearchResults, setAccountSearchResults] = useState<any[]>([]);
+  const [isAccountLoading, setIsAccountLoading] = useState(false);
+  const [contactSearchResults, setContactSearchResults] = useState<any[]>([]);
+  const [isContactLoading, setIsContactLoading] = useState(false);
+  const [opportunitySearchResults, setOpportunitySearchResults] = useState<
+    any[]
+  >([]);
+  const [isOpportunityLoading, setIsOpportunityLoading] = useState(false);
+
+  // [NEW] Debounced Search Values
+  const debouncedAccountSearch = useDebounce(accountSearchQuery, 300);
+  const debouncedContactSearch = useDebounce(contactSearchQuery, 300);
+  const debouncedOpportunitySearch = useDebounce(opportunitySearchQuery, 300);
+
+  // [NEW] Selected existing records
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
+    null
+  );
+  const [selectedContactId, setSelectedContactId] = useState<number | null>(
+    null
+  );
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<
+    number | null
+  >(null);
+
+  // [NEW] Option Change Handlers (to reset search)
+  const handleAccountOptionChange = (value: "new" | "existing") => {
+    setAccountOption(value);
+    setSelectedAccountId(null);
+    setAccountSearchQuery(value === "new" ? leadData.company : ""); // Reset or set to default
+    setAccountName(value === "new" ? leadData.company : ""); // Reset account name
+    setAccountSearchResults([]);
+    // If switching to 'new', also disable opportunity search
+    if (value === "new") {
+      handleOpportunityOptionChange("new");
+    }
+  };
+
+  const handleContactOptionChange = (value: "new" | "existing") => {
+    setContactOption(value);
+    setSelectedContactId(null);
+    setContactSearchQuery("");
+    setContactSearchResults([]);
+  };
+
+  const handleOpportunityOptionChange = (value: "new" | "existing") => {
+    setOpportunityOption(value);
+    setSelectedOpportunityId(null);
+    setOpportunitySearchQuery("");
+    setOpportunitySearchResults([]);
+  };
+
+  // [NEW] Effect for Account Search
+  useEffect(() => {
+    if (debouncedAccountSearch && accountOption === "existing") {
+      setIsAccountLoading(true);
+      axios
+        .get(
+          `/api/v1/sobjects/accounts?name=${encodeURIComponent(
+            debouncedAccountSearch
+          )}`
+        )
+        .then((res) => {
+          setAccountSearchResults(
+            res.data.map((acc: any) => ({ id: acc.id, name: acc.name }))
+          );
+        })
+        .catch((err) => console.error("Error searching accounts:", err))
+        .finally(() => setIsAccountLoading(false));
+    } else {
+      setAccountSearchResults([]);
+    }
+  }, [debouncedAccountSearch, accountOption]);
+
+  // [NEW] Effect for Contact Search
+  useEffect(() => {
+    if (debouncedContactSearch && contactOption === "existing") {
+      setIsContactLoading(true);
+      axios
+        .get(
+          `/api/v1/sobjects/contacts?search=${encodeURIComponent(
+            debouncedContactSearch
+          )}`
+        )
+        .then((res) => {
+          setContactSearchResults(
+            res.data.map((c: any) => ({
+              id: c.id,
+              name: `${c.first_name || ""} ${c.last_name || ""}`.trim(),
+            }))
+          );
+        })
+        .catch((err) => console.error("Error searching contacts:", err))
+        .finally(() => setIsContactLoading(false));
+    } else {
+      setContactSearchResults([]);
+    }
+  }, [debouncedContactSearch, contactOption]);
+
+  // [NEW] Effect for Opportunity Search (only if an account is selected)
+  useEffect(() => {
+    if (
+      debouncedOpportunitySearch &&
+      opportunityOption === "existing" &&
+      selectedAccountId
+    ) {
+      setIsOpportunityLoading(true);
+      axios
+        .get(
+          `/api/v1/sobjects/opportunities?search=${encodeURIComponent(
+            debouncedOpportunitySearch
+          )}`
+        )
+        .then((res) => {
+          // Filter ops by selected account
+          const accountOps = res.data.filter(
+            (op: any) => op.account_id === selectedAccountId
+          );
+          setOpportunitySearchResults(
+            accountOps.map((op: any) => ({ id: op.id, name: op.name }))
+          );
+        })
+        .catch((err) => console.error("Error searching opportunities:", err))
+        .finally(() => setIsOpportunityLoading(false));
+    } else {
+      setOpportunitySearchResults([]);
+    }
+  }, [debouncedOpportunitySearch, opportunityOption, selectedAccountId]);
+
+  // [MODIFIED] handleConvert now sends the full payload
   const handleConvert = async () => {
     setIsConverting(true);
-    try {
-      const response = await axios.post("/api/v1/actions/convert-lead", {
-        leadId: leadId,
+
+    // Validation
+    if (accountOption === "new" && !accountName.trim()) {
+      showToast("Account Name is required.", {
+        label: "Dismiss",
+        onClick: () => {},
       });
+      setIsConverting(false);
+      return;
+    }
+    if (accountOption === "existing" && !selectedAccountId) {
+      showToast("Please select an existing account.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      setIsConverting(false);
+      return;
+    }
+    if (
+      opportunityOption === "new" &&
+      !dontCreateOpportunity &&
+      !opportunityName.trim()
+    ) {
+      showToast("Opportunity Name is required.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      setIsConverting(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        leadId: leadId,
+        convertedStatus: convertedStatus, // This status is used by the backend to update the lead
+        dontCreateOpportunity: dontCreateOpportunity,
+
+        accountId: accountOption === "existing" ? selectedAccountId : null,
+        newAccountName: accountOption === "new" ? accountName : null,
+
+        contactId: contactOption === "existing" ? selectedContactId : null,
+
+        opportunityId:
+          opportunityOption === "existing" ? selectedOpportunityId : null,
+        newOpportunityName:
+          opportunityOption === "new" && !dontCreateOpportunity
+            ? opportunityName
+            : null,
+      };
+
+      const response = await axios.post(
+        "/api/v1/actions/convert-lead",
+        payload
+      );
 
       if (response.status === 200) {
         showToast("Lead converted successfully.", {
           label: "View Records",
-          onClick: () => {},
+          onClick: () => {
+            // After conversion, redirect to the new/existing Account page
+            const newAccountId = response.data?.account?.id;
+            if (newAccountId) {
+              router.push(`/accounts/${newAccountId}`);
+            } else {
+              router.push("/sales"); // Fallback
+            }
+          },
         });
         onOpenChange(false);
+        router.refresh(); // [MODIFIED] Refresh the current page data (e.g., the sales page)
       }
     } catch (error: any) {
       console.error("Error converting lead:", error);
@@ -155,7 +344,9 @@ export default function ConvertLeadModal({
                         <RadioGroup
                           value={accountOption}
                           onValueChange={(value) =>
-                            setAccountOption(value as "new" | "existing")
+                            handleAccountOptionChange(
+                              value as "new" | "existing"
+                            )
                           }
                         >
                           <div className="flex items-center gap-2">
@@ -201,7 +392,9 @@ export default function ConvertLeadModal({
                         <RadioGroup
                           value={accountOption}
                           onValueChange={(value) =>
-                            setAccountOption(value as "new" | "existing")
+                            handleAccountOptionChange(
+                              value as "new" | "existing"
+                            )
                           }
                         >
                           <div className="flex items-center gap-2">
@@ -235,20 +428,34 @@ export default function ConvertLeadModal({
                               setAccountSearchQuery(e.target.value)
                             }
                             className="border-[#000000] pr-10"
+                            disabled={accountOption !== "existing"}
                           />
                           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
                         </div>
-                        <div className="border border-[#000000] rounded p-4 min-h-[120px] bg-[#f3f2f2]">
-                          <p className="text-sm text-[#706e6b]">
-                            0 Account Matches
-                          </p>
-                        </div>
+                        <SearchResultList
+                          isLoading={isAccountLoading}
+                          results={accountSearchResults}
+                          onSelect={(item) => {
+                            setAccountSearchQuery(item.name);
+                            setSelectedAccountId(item.id);
+                            setAccountSearchResults([]);
+                            if (opportunityOption === "new") {
+                              setOpportunityName(`${item.name}-`);
+                            }
+                          }}
+                          noResultsMessage={
+                            accountSearchQuery
+                              ? "0 Account Matches"
+                              : "Type to search..."
+                          }
+                        />
                       </div>
                     </div>
                   </div>
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
             <hr className="border-b border-gray-400 w-full" />
             {/* Contact Section */}
             <Collapsible
@@ -274,7 +481,9 @@ export default function ConvertLeadModal({
                         <RadioGroup
                           value={contactOption}
                           onValueChange={(value) =>
-                            setContactOption(value as "new" | "existing")
+                            handleContactOptionChange(
+                              value as "new" | "existing"
+                            )
                           }
                         >
                           <div className="flex items-center gap-2">
@@ -295,7 +504,9 @@ export default function ConvertLeadModal({
                             <Label className="text-sm text-[#181818]">
                               Salutation
                             </Label>
-                            <Select defaultValue={leadData.salutation}>
+                            <Select
+                              defaultValue={leadData.salutation || "--None--"}
+                            >
                               <SelectTrigger className="border-[#000000] w-full">
                                 <SelectValue />
                               </SelectTrigger>
@@ -318,6 +529,7 @@ export default function ConvertLeadModal({
                             <Input
                               defaultValue={leadData.firstName}
                               className="border-[#000000]"
+                              readOnly
                             />
                           </div>
 
@@ -328,6 +540,7 @@ export default function ConvertLeadModal({
                             <Input
                               defaultValue={leadData.lastName}
                               className="border-[#000000]"
+                              readOnly
                             />
                           </div>
                         </div>
@@ -347,7 +560,9 @@ export default function ConvertLeadModal({
                         <RadioGroup
                           value={contactOption}
                           onValueChange={(value) =>
-                            setContactOption(value as "new" | "existing")
+                            handleContactOptionChange(
+                              value as "new" | "existing"
+                            )
                           }
                         >
                           <div className="flex items-center gap-2">
@@ -381,14 +596,24 @@ export default function ConvertLeadModal({
                               setContactSearchQuery(e.target.value)
                             }
                             className="border-[#000000] pr-10"
+                            disabled={contactOption !== "existing"}
                           />
                           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
                         </div>
-                        <div className="border border-[#000000] rounded p-4 min-h-[120px] bg-[#f3f2f2]">
-                          <p className="text-sm text-[#706e6b]">
-                            0 Contact Matches
-                          </p>
-                        </div>
+                        <SearchResultList
+                          isLoading={isContactLoading}
+                          results={contactSearchResults}
+                          onSelect={(item) => {
+                            setContactSearchQuery(item.name);
+                            setSelectedContactId(item.id);
+                            setContactSearchResults([]);
+                          }}
+                          noResultsMessage={
+                            contactSearchQuery
+                              ? "0 Contact Matches"
+                              : "Type to search..."
+                          }
+                        />
                         <div className="flex items-center gap-2">
                           <Checkbox id="update-lead-source" />
                           <Label
@@ -404,6 +629,7 @@ export default function ConvertLeadModal({
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
             <hr className="border-b border-gray-400 w-full" />
 
             {/* Opportunity Section */}
@@ -432,7 +658,9 @@ export default function ConvertLeadModal({
                         <RadioGroup
                           value={opportunityOption}
                           onValueChange={(value) =>
-                            setOpportunityOption(value as "new" | "existing")
+                            handleOpportunityOptionChange(
+                              value as "new" | "existing"
+                            )
                           }
                           disabled={dontCreateOpportunity}
                         >
@@ -507,7 +735,9 @@ export default function ConvertLeadModal({
                         <RadioGroup
                           value={opportunityOption}
                           onValueChange={(value) =>
-                            setOpportunityOption(value as "new" | "existing")
+                            handleOpportunityOptionChange(
+                              value as "new" | "existing"
+                            )
                           }
                           disabled={dontCreateOpportunity}
                         >
@@ -515,11 +745,21 @@ export default function ConvertLeadModal({
                             <RadioGroupItem
                               value="existing"
                               id="opportunity-existing"
-                              disabled={true}
+                              disabled={
+                                dontCreateOpportunity ||
+                                accountOption === "new" ||
+                                !selectedAccountId
+                              }
                             />
                             <Label
                               htmlFor="opportunity-existing"
-                              className="text-sm font-normal text-[#706e6b] cursor-not-allowed"
+                              className={`text-sm font-normal ${
+                                dontCreateOpportunity ||
+                                accountOption === "new" ||
+                                !selectedAccountId
+                                  ? "text-[#706e6b] cursor-not-allowed"
+                                  : "text-[#0176d3] cursor-pointer"
+                              }`}
                             >
                               Choose Existing Opportunity
                             </Label>
@@ -527,16 +767,53 @@ export default function ConvertLeadModal({
                         </RadioGroup>
                       </div>
 
-                      <div className="border border-[#000000] rounded p-4 min-h-[120px] bg-[#f3f2f2]">
-                        <p className="text-sm text-[#706e6b]">
-                          To find opportunity, choose an existing account
-                        </p>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="opportunity-search"
+                          className="text-sm text-[#181818]"
+                        >
+                          Opportunity Search
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="opportunity-search"
+                            placeholder="Search Opportunities..."
+                            value={opportunitySearchQuery}
+                            onChange={(e) =>
+                              setOpportunitySearchQuery(e.target.value)
+                            }
+                            className="border-[#000000] pr-10"
+                            disabled={
+                              opportunityOption !== "existing" ||
+                              accountOption === "new" ||
+                              !selectedAccountId
+                            }
+                          />
+                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
+                        </div>
+                        <SearchResultList
+                          isLoading={isOpportunityLoading}
+                          results={opportunitySearchResults}
+                          onSelect={(item) => {
+                            setOpportunitySearchQuery(item.name);
+                            setSelectedOpportunityId(item.id);
+                            setOpportunitySearchResults([]);
+                          }}
+                          noResultsMessage={
+                            accountOption === "new" || !selectedAccountId
+                              ? "To find opportunity, choose an existing account"
+                              : opportunitySearchQuery
+                              ? "0 Opportunity Matches"
+                              : "Type to search..."
+                          }
+                        />
                       </div>
                     </div>
                   </div>
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
             <hr className="border-b border-gray-400 w-full" />
 
             {/* Record Owner and Converted Status */}
@@ -570,8 +847,8 @@ export default function ConvertLeadModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Qualified">Qualified</SelectItem>
-                    <SelectItem value="Unqualified">Unqualified</SelectItem>
-                    <SelectItem value="Contacted">Contacted</SelectItem>
+                    {/* Add other valid *final* lead statuses here if needed */}
+                    <SelectItem value="Converted">Converted</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -583,14 +860,14 @@ export default function ConvertLeadModal({
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-400">
           <Button
             onClick={() => onOpenChange(false)}
-            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
             disabled={isConverting}
           >
             Cancel
           </Button>
           <Button
             onClick={handleConvert}
-            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-4xl"
+            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-3xl"
             disabled={isConverting}
           >
             {isConverting ? "Converting..." : "Convert"}

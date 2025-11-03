@@ -721,7 +721,7 @@ export default function AccountFormModal({
         {/* Modal Footer Styling replicated from LeadFormModal */}
         <DialogFooter className="px-6 py-4 border-t border-gray-400 flex-row justify-end gap-3">
           <Button
-            onClick={onClose} // Button styling replicated (using rounded-full for rounded-4xl)
+            onClick={onClose} // Button styling replicated (using rounded-full for rounded-3xl)
             className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-full"
             disabled={isSaving} // [MODIFIED]
           >

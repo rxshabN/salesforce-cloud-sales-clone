@@ -28,6 +28,7 @@ import { useToast } from "@/components/toast-provider";
 import ContactFormModal, {
   ContactFormData,
 } from "@/components/modals/contact-form-modal";
+import { getOrCreateAccountId } from "@/lib/account-utils";
 
 interface Contact {
   id: number;
@@ -151,49 +152,6 @@ export default function ContactsContent() {
     };
   }, [searchQuery]);
 
-  // --- "Get or Create" Account Helper ---
-  const getOrCreateAccountId = async (
-    accountName: string
-  ): Promise<number | null> => {
-    if (!accountName.trim()) {
-      showToast("Account Name is required.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
-      return null;
-    }
-    try {
-      const searchResponse = await axios.get(
-        `/api/v1/sobjects/accounts?name=${encodeURIComponent(accountName)}`
-      );
-      const accounts = searchResponse.data || [];
-      const exactMatch = accounts.find(
-        (acc: any) => acc.name.toLowerCase() === accountName.toLowerCase()
-      );
-      if (exactMatch) return exactMatch.id;
-
-      const createResponse = await axios.post("/api/v1/sobjects/accounts", {
-        name: accountName,
-        account_owner: "Rishab Nagwani",
-      });
-      if (createResponse.status === 201) {
-        showToast(`New account "${accountName}" created.`, {
-          label: "Dismiss",
-          onClick: () => {},
-        });
-        return createResponse.data.id;
-      }
-      throw new Error("Failed to create account");
-    } catch (error) {
-      console.error("Error in getOrCreateAccountId:", error);
-      showToast("Error finding or creating account.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
-      return null;
-    }
-  };
-
   // --- "New/Edit Contact" Modal Logic ---
   const resetContactForm = () => {
     setContactFormData(initialContactFormData);
@@ -218,6 +176,10 @@ export default function ContactsContent() {
     try {
       const accountId = await getOrCreateAccountId(contactFormData.accountName);
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         return;
       }
 
@@ -278,7 +240,12 @@ export default function ContactsContent() {
       }
     } catch (error: any) {
       console.error("Error saving contact:", error);
-      if (error.response?.data?.code === "P2002") {
+      if (error.message === "Account Name is required.") {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else if (error.response?.data?.code === "P2002") {
         showToast("A contact with this email already exists.", {
           label: "Dismiss",
           onClick: () => {},
@@ -298,6 +265,10 @@ export default function ContactsContent() {
     try {
       const accountId = await getOrCreateAccountId(contactFormData.accountName);
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         return;
       }
 
@@ -337,7 +308,12 @@ export default function ContactsContent() {
       }
     } catch (error: any) {
       console.error("Error creating contact:", error);
-      if (error.response?.data?.code === "P2002") {
+      if (error.message === "Account Name is required.") {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else if (error.response?.data?.code === "P2002") {
         showToast("A contact with this email already exists.", {
           label: "Dismiss",
           onClick: () => {},

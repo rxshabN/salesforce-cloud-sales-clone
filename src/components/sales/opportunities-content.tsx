@@ -28,6 +28,7 @@ import { useToast } from "@/components/toast-provider";
 import OpportunityFormModal, {
   OpportunityFormData,
 } from "@/components/modals/opportunity-form-modal";
+import { getOrCreateAccountId } from "@/lib/account-utils";
 
 interface Opportunity {
   id: number;
@@ -132,48 +133,6 @@ export default function OpportunitiesContent() {
     };
   }, [searchQuery]);
 
-  const getOrCreateAccountId = async (
-    accountName: string
-  ): Promise<number | null> => {
-    if (!accountName.trim()) {
-      showToast("Account Name is required.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
-      return null;
-    }
-    try {
-      const searchResponse = await axios.get(
-        `/api/v1/sobjects/accounts?name=${encodeURIComponent(accountName)}`
-      );
-      const accounts = searchResponse.data || [];
-      const exactMatch = accounts.find(
-        (acc: any) => acc.name.toLowerCase() === accountName.toLowerCase()
-      );
-      if (exactMatch) return exactMatch.id;
-
-      const createResponse = await axios.post("/api/v1/sobjects/accounts", {
-        name: accountName,
-        account_owner: "Rishab Nagwani",
-      });
-      if (createResponse.status === 201) {
-        showToast(`New account "${accountName}" created.`, {
-          label: "Dismiss",
-          onClick: () => {},
-        });
-        return createResponse.data.id;
-      }
-      throw new Error("Failed to create account");
-    } catch (error) {
-      console.error("Error in getOrCreateAccountId:", error);
-      showToast("Error finding or creating account.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
-      return null;
-    }
-  };
-
   const resetOpportunityForm = () => {
     setOpportunityFormData(initialOpportunityFormData);
     setOpportunityErrors({});
@@ -212,6 +171,10 @@ export default function OpportunitiesContent() {
         opportunityFormData.accountName
       );
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         setIsSaving(false);
         return;
       }
@@ -269,10 +232,20 @@ export default function OpportunitiesContent() {
       }
     } catch (error) {
       console.error("Error saving opportunity:", error);
-      showToast("Failed to save opportunity. Please try again.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
+      if (
+        error instanceof Error &&
+        error.message === "Account Name is required."
+      ) {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else {
+        showToast("Failed to save opportunity. Please try again.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -287,6 +260,10 @@ export default function OpportunitiesContent() {
         opportunityFormData.accountName
       );
       if (!accountId) {
+        showToast("Error finding or creating account.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
         setIsSaving(false);
         return;
       }
@@ -326,14 +303,25 @@ export default function OpportunitiesContent() {
       }
     } catch (error) {
       console.error("Error creating opportunity:", error);
-      showToast("Failed to create opportunity. Please try again.", {
-        label: "Dismiss",
-        onClick: () => {},
-      });
+      if (
+        error instanceof Error &&
+        error.message === "Account Name is required."
+      ) {
+        showToast("Account Name is required.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      } else {
+        showToast("Failed to create opportunity. Please try again.", {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+      }
     } finally {
       setIsSaving(false);
     }
   };
+
   const handleEdit = async (opportunity: Opportunity) => {
     try {
       const response = await axios.get(

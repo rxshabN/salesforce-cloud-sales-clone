@@ -876,7 +876,7 @@ export default function LeadFormModal({
         <DialogFooter className="px-6 py-4 border-t border-gray-400 flex-row justify-end gap-3">
           <Button
             onClick={onClose}
-            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
             disabled={isSaving}
           >
             Cancel
@@ -884,7 +884,7 @@ export default function LeadFormModal({
           {!isEditMode && (
             <Button
               onClick={onSaveAndNew}
-              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
               disabled={isSaving}
             >
               Save & New
@@ -892,7 +892,7 @@ export default function LeadFormModal({
           )}
           <Button
             onClick={onSave}
-            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-4xl"
+            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-3xl"
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save"}

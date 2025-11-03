@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +21,9 @@ import {
 import { Label } from "@/components/ui/label"; // Added
 import { Textarea } from "@/components/ui/textarea"; // Added
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import useDebounce from "@/hooks/use-debounce";
+import { SearchResultList } from "../search-result-list";
 
 export interface ContactFormData {
   salutation: string;
@@ -28,6 +32,7 @@ export interface ContactFormData {
   accountName: string;
   title: string;
   reportsTo: string;
+  reportsToId: number | null;
   description: string;
   email: string;
   phone: string;
@@ -272,6 +277,74 @@ export default function ContactFormModal({
     "Zimbabwe",
   ];
 
+  const [accountSearchQuery, setAccountSearchQuery] = useState("");
+  const [accountSearchResults, setAccountSearchResults] = useState<any[]>([]);
+  const [isAccountLoading, setIsAccountLoading] = useState(false);
+  const debouncedAccountSearch = useDebounce(accountSearchQuery, 300);
+
+  // [NEW] State for Contact Search (Reports To)
+  const [reportsToSearchQuery, setReportsToSearchQuery] = useState("");
+  const [reportsToSearchResults, setReportsToSearchResults] = useState<any[]>(
+    []
+  );
+  const [isReportsToLoading, setIsReportsToLoading] = useState(false);
+  const debouncedReportsToSearch = useDebounce(reportsToSearchQuery, 300);
+
+  // [NEW] Effect for Account Search
+  useEffect(() => {
+    // Only search if the query doesn't match the form data (i.e., user is typing)
+    if (
+      debouncedAccountSearch &&
+      debouncedAccountSearch !== contactFormData.accountName
+    ) {
+      setIsAccountLoading(true);
+      axios
+        .get(
+          `/api/v1/sobjects/accounts?name=${encodeURIComponent(
+            debouncedAccountSearch
+          )}`
+        )
+        .then((res) => {
+          setAccountSearchResults(
+            res.data.map((acc: any) => ({ id: acc.id, name: acc.name }))
+          );
+        })
+        .catch((err) => console.error("Error searching accounts:", err))
+        .finally(() => setIsAccountLoading(false));
+    } else {
+      setAccountSearchResults([]);
+    }
+  }, [debouncedAccountSearch, contactFormData.accountName]);
+
+  // [NEW] Effect for Contact Search (Reports To)
+  useEffect(() => {
+    // Only search if the query doesn't match the form data
+    if (
+      debouncedReportsToSearch &&
+      debouncedReportsToSearch !== contactFormData.reportsTo
+    ) {
+      setIsReportsToLoading(true);
+      axios
+        .get(
+          `/api/v1/sobjects/contacts?search=${encodeURIComponent(
+            debouncedReportsToSearch
+          )}`
+        )
+        .then((res) => {
+          setReportsToSearchResults(
+            res.data.map((c: any) => ({
+              id: c.id,
+              name: `${c.first_name || ""} ${c.last_name || ""}`.trim(),
+            }))
+          );
+        })
+        .catch((err) => console.error("Error searching contacts:", err))
+        .finally(() => setIsReportsToLoading(false));
+    } else {
+      setReportsToSearchResults([]);
+    }
+  }, [debouncedReportsToSearch, contactFormData.reportsTo]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -420,7 +493,6 @@ export default function ContactFormModal({
                   </div>
                 </div>
                 <div>
-                  {/* todo implement account search and selection within the modal itself*/}
                   <Label className="block text-sm text-[#181818] mb-1">
                     {/* Updated */}
                     <span className="text-red-600">*</span> Account Name
@@ -438,6 +510,7 @@ export default function ContactFormModal({
                           ...contactFormData,
                           accountName: e.target.value,
                         });
+                        setAccountSearchQuery(e.target.value);
                         if (contactErrors.accountName) {
                           setContactErrors({
                             ...contactErrors,
@@ -458,6 +531,24 @@ export default function ContactFormModal({
                       Complete this field.
                     </p>
                   )}
+                  {accountSearchQuery &&
+                    accountSearchQuery !== contactFormData.accountName && (
+                      <div className="mt-2">
+                        <SearchResultList
+                          isLoading={isAccountLoading}
+                          results={accountSearchResults}
+                          onSelect={(item) => {
+                            setContactFormData({
+                              ...contactFormData,
+                              accountName: item.name,
+                            });
+                            setAccountSearchQuery("");
+                            setAccountSearchResults([]);
+                          }}
+                          noResultsMessage="No accounts found. A new one will be created."
+                        />
+                      </div>
+                    )}
                 </div>
                 {/* Title */}
                 <div>
@@ -476,7 +567,7 @@ export default function ContactFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm" // Updated
                   />
                 </div>
-                {/* Reports To with Search todo to be implemented - contact search with selection of contact within the modal itself*/}
+
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     {/* Updated */}
@@ -486,16 +577,36 @@ export default function ContactFormModal({
                     <Input
                       placeholder="Search Contacts..."
                       value={contactFormData.reportsTo}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setContactFormData({
                           ...contactFormData,
                           reportsTo: e.target.value,
-                        })
-                      }
+                          reportsToId: null, // Clear ID on manual change
+                        });
+                        setReportsToSearchQuery(e.target.value); // [NEW]
+                      }}
                       className="w-full border border-[#000000] rounded px-3 py-2 pr-10 text-sm" // Updated
                     />
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
                   </div>
+                  {reportsToSearchQuery &&
+                    reportsToSearchQuery !== contactFormData.reportsTo && (
+                      <div className="mt-2">
+                        <SearchResultList
+                          isLoading={isReportsToLoading}
+                          results={reportsToSearchResults}
+                          onSelect={(item) => {
+                            setContactFormData({
+                              ...contactFormData,
+                              reportsTo: item.name,
+                              reportsToId: item.id,
+                            });
+                            setReportsToSearchQuery("");
+                            setReportsToSearchResults([]);
+                          }}
+                        />
+                      </div>
+                    )}
                 </div>
                 {/* Description */}
                 <div>
@@ -720,7 +831,7 @@ export default function ContactFormModal({
           {/* Updated */}
           <Button
             onClick={onClose}
-            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl" // Updated
+            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl" // Updated
             disabled={isSaving} // Disable Cancel button while saving
           >
             Cancel
@@ -728,7 +839,7 @@ export default function ContactFormModal({
           {!isEditMode && (
             <Button
               onClick={onSaveAndNew}
-              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl" // Updated
+              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl" // Updated
               disabled={isSaving} // Disable Save & New button while saving
             >
               Save & New
@@ -736,7 +847,7 @@ export default function ContactFormModal({
           )}
           <Button
             onClick={onSave}
-            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-4xl" // Updated
+            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-3xl" // Updated
             disabled={isSaving} // Disable Save button while saving
           >
             {isSaving ? "Saving..." : "Save"}

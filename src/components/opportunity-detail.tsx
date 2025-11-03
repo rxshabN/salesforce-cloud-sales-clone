@@ -120,7 +120,7 @@ export default function OpportunityDetail({
       );
       setOpportunity(response.data);
       setEditFormData({
-        opportunity_name: response.data.opportunity_name || "",
+        name: response.data.name || "",
         amount: response.data.amount || "",
         close_date: response.data.close_date || "",
         stage: response.data.stage || "",
@@ -147,9 +147,17 @@ export default function OpportunityDetail({
   // Handle inline edit save
   const handleInlineSave = async () => {
     try {
+      const dataToSave = {
+        ...editFormData,
+        amount: editFormData.amount ? parseFloat(editFormData.amount) : null,
+        probability: editFormData.probability
+          ? parseFloat(editFormData.probability)
+          : null,
+      };
+
       await axios.patch(
         `/api/v1/sobjects/opportunities/${opportunityId}`,
-        editFormData
+        dataToSave
       );
       showToast("Opportunity updated successfully.", {
         label: "Undo",
@@ -277,7 +285,7 @@ export default function OpportunityDetail({
             <div>
               <p className="text-xs text-[#706e6b]">Opportunity</p>
               <h1 className="text-2xl font-normal text-[#181818]">
-                {opportunity.opportunity_name}
+                {opportunity.name}
               </h1>
             </div>
           </div>
@@ -420,7 +428,7 @@ export default function OpportunityDetail({
             <div className="ml-6">
               <Button
                 onClick={handleMarkStageComplete}
-                className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl flex items-center gap-2"
+                className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-3xl flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
                 Mark Stage as Complete
@@ -493,11 +501,11 @@ export default function OpportunityDetail({
                         </label>
                         <input
                           type="text"
-                          value={editFormData.opportunity_name}
+                          value={editFormData.name}
                           onChange={(e) =>
                             setEditFormData({
                               ...editFormData,
-                              opportunity_name: e.target.value,
+                              name: e.target.value,
                             })
                           }
                           className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
@@ -643,13 +651,13 @@ export default function OpportunityDetail({
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
-                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleInlineSave}
-                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl"
+                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-3xl"
                     >
                       Save
                     </Button>
@@ -827,7 +835,7 @@ export default function OpportunityDetail({
                             Opportunity Name
                           </p>
                           <p className="text-sm text-[#181818]">
-                            {opportunity.opportunity_name}
+                            {opportunity.name}
                           </p>
                         </div>
                         <Pencil
@@ -1035,7 +1043,7 @@ export default function OpportunityDetail({
 
             {/* Show All Activities Button */}
             <div className="text-center">
-              <Button className="bg-[#066afe] rounded-4xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
+              <Button className="bg-[#066afe] rounded-3xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
               </Button>
             </div>

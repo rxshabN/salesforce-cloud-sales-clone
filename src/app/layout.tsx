@@ -7,9 +7,9 @@ import ToDoList from "@/components/to-do-list";
 import { ToastProvider } from "@/components/toast-provider";
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.app",
+  title: "Salesforce Cloud Sales Clone",
+  description:
+    "This is a Salesforce Cloud Sales Clone built with Next.js and TypeScript.",
 };
 
 export default function RootLayout({

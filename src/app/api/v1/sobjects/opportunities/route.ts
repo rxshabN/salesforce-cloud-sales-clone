@@ -26,9 +26,18 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.account_id || !body.name || !body.stage || !body.close_date) {
+    if (
+      !body.account_id ||
+      !body.name ||
+      !body.stage ||
+      !body.close_date ||
+      !body.forecast_category
+    ) {
       return NextResponse.json(
-        { message: "Account ID, Name, Stage, and Close Date are required." },
+        {
+          message:
+            "Account ID, Name, Stage, Close Date, and Forecast Category are required.",
+        },
         { status: 400 }
       );
     }

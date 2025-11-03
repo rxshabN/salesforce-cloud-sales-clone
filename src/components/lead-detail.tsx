@@ -166,7 +166,7 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
         onClick: () => {},
       });
     }
-  };  
+  };
 
   // Get current status index
   const getCurrentStatusIndex = () => {
@@ -345,17 +345,19 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
           </div>
 
           {/* Mark Status as Complete Button */}
-          {currentStatusIndex < statusStages.length - 1 && (
-            <div className="ml-6">
-              <Button
-                onClick={handleMarkStatusComplete}
-                className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl flex items-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                Mark Status as Complete
-              </Button>
-            </div>
-          )}
+          <div className="ml-6">
+            <Button
+              onClick={handleMarkStatusComplete}
+              className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-3xl flex items-center gap-2"
+              disabled={
+                currentStatusIndex === -1 ||
+                currentStatusIndex === statusStages.length - 1
+              }
+            >
+              <Check className="w-4 h-4" />
+              Mark Status as Complete
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -690,13 +692,13 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
-                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleInlineSave}
-                      className="bg-[#066afe] text-white hover:bg-[] h-9 px-4 text-sm rounded-4xl"
+                      className="bg-[#066afe] text-white hover:bg-[] h-9 px-4 text-sm rounded-3xl"
                     >
                       Save
                     </Button>
@@ -1142,7 +1144,7 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
 
             {/* Show All Activities Button */}
             <div className="text-center">
-              <Button className="bg-[#066afe] rounded-4xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
+              <Button className="bg-[#066afe] rounded-3xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
               </Button>
             </div>

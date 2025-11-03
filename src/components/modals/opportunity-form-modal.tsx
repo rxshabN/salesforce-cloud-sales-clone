@@ -1,5 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react"; // [ADDED]
+import axios from "axios"; // [ADDED]
+import useDebounce from "@/hooks/use-debounce"; // [ADDED]
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Ban, Search, Calendar } from "lucide-react";
 import Image from "next/image";
+import { SearchResultList } from "../search-result-list";
 
 export interface OpportunityFormData {
   opportunityName: string;
@@ -58,6 +62,12 @@ export default function OpportunityFormModal({
   setOpportunityErrors,
   isSaving,
 }: OpportunityFormModalProps) {
+  // [NEW] State for Account Search
+  const [accountSearchQuery, setAccountSearchQuery] = useState("");
+  const [accountSearchResults, setAccountSearchResults] = useState<any[]>([]);
+  const [isAccountLoading, setIsAccountLoading] = useState(false);
+  const debouncedAccountSearch = useDebounce(accountSearchQuery, 300);
+
   const stageOptions = [
     "--None--",
     "Qualify",
@@ -76,6 +86,32 @@ export default function OpportunityFormModal({
     "Commit",
     "Closed",
   ];
+
+  // [NEW] Effect for Account Search
+  useEffect(() => {
+    // Only search if the user is typing (query doesn't match the set account name)
+    if (
+      debouncedAccountSearch &&
+      debouncedAccountSearch !== opportunityFormData.accountName
+    ) {
+      setIsAccountLoading(true);
+      axios
+        .get(
+          `/api/v1/sobjects/accounts?name=${encodeURIComponent(
+            debouncedAccountSearch
+          )}`
+        )
+        .then((res) => {
+          setAccountSearchResults(
+            res.data.map((acc: any) => ({ id: acc.id, name: acc.name }))
+          );
+        })
+        .catch((err) => console.error("Error searching accounts:", err))
+        .finally(() => setIsAccountLoading(false));
+    } else {
+      setAccountSearchResults([]); // Clear results if query is empty or matches
+    }
+  }, [debouncedAccountSearch, opportunityFormData.accountName]);
 
   if (!isOpen) return null;
 
@@ -145,7 +181,7 @@ export default function OpportunityFormModal({
                   )}
                 </div>
                 <div>
-                  {/* todo: implement account search with account selection functionality as option within the dropdown itself */}
+                  {/* [REMOVED] todo: implement account search... */}
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Account Name
                   </Label>
@@ -157,10 +193,12 @@ export default function OpportunityFormModal({
                       placeholder="Search Accounts..."
                       value={opportunityFormData.accountName}
                       onChange={(e) => {
+                        // [MODIFIED]
                         setOpportunityFormData({
                           ...opportunityFormData,
                           accountName: e.target.value,
                         });
+                        setAccountSearchQuery(e.target.value); // Trigger search
                         if (opportunityErrors.accountName) {
                           setOpportunityErrors({
                             ...opportunityErrors,
@@ -181,6 +219,25 @@ export default function OpportunityFormModal({
                       Complete this field.
                     </p>
                   )}
+                  {/* [NEW] Account Search Results */}
+                  {accountSearchQuery &&
+                    accountSearchQuery !== opportunityFormData.accountName && (
+                      <div className="mt-2">
+                        <SearchResultList
+                          isLoading={isAccountLoading}
+                          results={accountSearchResults}
+                          onSelect={(item) => {
+                            setOpportunityFormData({
+                              ...opportunityFormData,
+                              accountName: item.name,
+                            });
+                            setAccountSearchQuery("");
+                            setAccountSearchResults([]);
+                          }}
+                          noResultsMessage="No accounts found. A new one will be created."
+                        />
+                      </div>
+                    )}
                 </div>
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
@@ -402,7 +459,7 @@ export default function OpportunityFormModal({
         <DialogFooter className="px-6 py-4 border-t border-gray-400 flex-row justify-end gap-3">
           <Button
             onClick={onClose}
-            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
             disabled={isSaving}
           >
             Cancel
@@ -410,7 +467,7 @@ export default function OpportunityFormModal({
           {!isEditMode && (
             <Button
               onClick={onSaveAndNew}
-              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-3xl"
               disabled={isSaving}
             >
               Save & New
@@ -418,7 +475,7 @@ export default function OpportunityFormModal({
           )}
           <Button
             onClick={onSave}
-            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-4xl"
+            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-3xl"
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save"}
