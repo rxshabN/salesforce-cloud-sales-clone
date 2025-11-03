@@ -35,11 +35,22 @@ import { NextResponse } from "next/server";
  */
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const name = searchParams.get("name");
   try {
-    const accounts = await prisma.accounts.findMany({
+    const queryOptions: any = {
       orderBy: { created_at: "desc" },
-    });
+    };
 
+    if (name) {
+      queryOptions.where = {
+        name: {
+          contains: name,
+          mode: "insensitive",
+        },
+      };
+    }
+    const accounts = await prisma.accounts.findMany(queryOptions);
     return NextResponse.json(accounts);
   } catch (error) {
     console.error("Error fetching accounts:", error);

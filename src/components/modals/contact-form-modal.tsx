@@ -2,7 +2,24 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, Search, AlertCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Search, Ban, X } from "lucide-react"; // Added X, replaced AlertCircle
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Added
+import { Label } from "@/components/ui/label"; // Added
+import { Textarea } from "@/components/ui/textarea"; // Added
+import Image from "next/image";
 
 export interface ContactFormData {
   salutation: string;
@@ -23,6 +40,7 @@ export interface ContactFormData {
 
 interface ContactFormModalProps {
   isOpen: boolean;
+  isEditMode: boolean;
   onClose: () => void;
   onSave: () => Promise<void>;
   onSaveAndNew: () => Promise<void>;
@@ -30,12 +48,12 @@ interface ContactFormModalProps {
   setContactFormData: (data: ContactFormData) => void;
   contactErrors: Record<string, boolean>;
   setContactErrors: (errors: Record<string, boolean>) => void;
-  modalTitle?: string;
-  showSaveAndNew?: boolean;
+  isSaving?: boolean;
 }
 
 export default function ContactFormModal({
   isOpen,
+  isEditMode,
   onClose,
   onSave,
   onSaveAndNew,
@@ -43,81 +61,296 @@ export default function ContactFormModal({
   setContactFormData,
   contactErrors,
   setContactErrors,
-  modalTitle = "New Contact",
-  showSaveAndNew = true,
+  isSaving,
 }: ContactFormModalProps) {
-  if (!isOpen) return null;
+  // Options for Salutation
+  const salutationOptions = [
+    "--None--",
+    "Mr.",
+    "Ms.",
+    "Mrs.",
+    "Dr.",
+    "Prof.",
+    "Mx.",
+  ]; // Options for Countries (simplified, add more as needed)
+  const allCountries = [
+    "--None--",
+    "Afghanistan",
+    "Albania",
+    "Algeria",
+    "Andorra",
+    "Angola",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Cabo Verde",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Central African Republic",
+    "Chad",
+    "Chile",
+    "China",
+    "Colombia",
+    "Comoros",
+    "Congo (Congo-Brazzaville)",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Cyprus",
+    "Czech Republic",
+    "Democratic Republic of the Congo",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Eswatini",
+    "Ethiopia",
+    "Fiji",
+    "Finland",
+    "France",
+    "Gabon",
+    "Gambia",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Grenada",
+    "Guatemala",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Honduras",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Jamaica",
+    "Japan",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mexico",
+    "Micronesia",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar (Burma)",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "North Korea",
+    "North Macedonia",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Palestine",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Saint Kitts and Nevis",
+    "Saint Lucia",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Sudan",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Taiwan",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "Timor-Leste",
+    "Togo",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "United States",
+    "Uruguay",
+    "Uzbekistan",
+    "Vanuatu",
+    "Vatican City",
+    "Venezuela",
+    "Vietnam",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe",
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop with blur */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-2xl mx-4">
-        {/* Close Button - Outside modal, top right */}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="overflow-y-auto min-w-4xl max-h-[90vh] flex flex-col p-0 rounded-t-3xl rounded-b-none" // Updated
+        showCloseButton={false} // Updated
+      >
+        {/* Added Custom Close Button */}
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-150 shadow-lg"
+          className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white border-2 border-[#0176d3] flex items-center justify-center hover:bg-gray-50 transition-colors z-20"
         >
-          <X className="w-5 h-5 text-[#706e6b]" />
+          <X className="w-5 h-5 text-[#0176d3]" />
         </button>
-
-        {/* Modal Content */}
-        <div className="bg-white rounded-lg shadow-2xl max-h-[80vh] flex flex-col">
-          <div className="px-6 py-4 border-b border-[#dddbda] flex items-center justify-between">
-            <h2 className="text-xl font-normal text-[#181818] flex-1 text-center">
-              {modalTitle}
-            </h2>
-            <p className="text-xs text-[#706e6b]">
-              * = Required Information
+        <div className="overflow-y-auto">
+          <DialogHeader className="px-6 py-4 border-b-2 border-gray-300">
+            {/* Updated */}
+            <DialogTitle className="text-xl font-normal text-[#181818] flex-1 text-center">
+              {isEditMode ? "Edit Contact" : "New Contact"}
+            </DialogTitle>
+          </DialogHeader>
+          {/* "Required Info" text moved below header */}
+          <div className="px-6 text-right">
+            <p className="text-xs text-[#000000]">
+              <span className="text-red-500">*</span> = Required Information
             </p>
           </div>
-
-          {/* Modal Body - Scrollable */}
-          <div className="overflow-y-auto px-6 py-4 space-y-6">
+          {/* Scrollable Body */}
+          <div className="px-10 py-4 space-y-6">
+            {/* Updated Padding */}
             {/* About Section */}
             <div>
-              <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
+              <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
+                {/* Updated */}
                 About
               </h3>
-
               {/* Name */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     <span className="text-red-600">*</span> Name
-                  </label>
+                  </Label>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs text-[#706e6b] mb-1">
+                      <Label className="block text-xs text-[#000000] mb-1">
+                        {/* Updated */}
                         Salutation
-                      </label>
-                      <select
+                      </Label>
+                      <Select // Updated
                         value={contactFormData.salutation}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           setContactFormData({
                             ...contactFormData,
-                            salutation: e.target.value,
+                            salutation: value,
                           })
                         }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                       >
-                        <option value="">--None--</option>
-                        <option value="Mr.">Mr.</option>
-                        <option value="Ms.">Ms.</option>
-                        <option value="Mrs.">Mrs.</option>
-                        <option value="Dr.">Dr.</option>
-                      </select>
+                        <SelectTrigger className="w-full border border-[#000000] rounded px-3 py-2 text-sm">
+                          <SelectValue placeholder="--None--" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {salutationOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <label className="block text-xs text-[#706e6b] mb-1">
+                      <Label className="block text-xs text-[#000000] mb-1">
+                        {/* Updated */}
                         <span className="text-red-600">*</span> First Name
-                      </label>
+                      </Label>
                       <div className="relative">
+                        {/* Added Error Icon */}
+                        {contactErrors.firstName && (
+                          <Ban className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-600 z-10" />
+                        )}
                         <Input
                           placeholder="First Name"
                           value={contactFormData.firstName}
@@ -133,15 +366,12 @@ export default function ContactFormModal({
                               });
                             }
                           }}
-                          className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
+                          className={`w-full text-sm ${
                             contactErrors.firstName
-                              ? "border-2 border-red-600 pr-10"
-                              : "border border-[#dddbda]"
+                              ? "border-red-500 bg-[#fddde3] pl-10" // Red style
+                              : "border border-[#000000] rounded px-3 py-2" // Base style
                           }`}
                         />
-                        {contactErrors.firstName && (
-                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                        )}
                       </div>
                       {contactErrors.firstName && (
                         <p className="text-red-600 text-xs mt-1">
@@ -150,10 +380,15 @@ export default function ContactFormModal({
                       )}
                     </div>
                     <div>
-                      <label className="block text-xs text-[#706e6b] mb-1">
+                      <Label className="block text-xs text-[#000000] mb-1">
+                        {/* Updated */}
                         <span className="text-red-600">*</span> Last Name
-                      </label>
+                      </Label>
                       <div className="relative">
+                        {/* Added Error Icon */}
+                        {contactErrors.lastName && (
+                          <Ban className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-600 z-10" />
+                        )}
                         <Input
                           placeholder="Last Name"
                           value={contactFormData.lastName}
@@ -169,15 +404,12 @@ export default function ContactFormModal({
                               });
                             }
                           }}
-                          className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
+                          className={`w-full text-sm ${
                             contactErrors.lastName
-                              ? "border-2 border-red-600 pr-10"
-                              : "border border-[#dddbda]"
+                              ? "border-red-500 bg-[#fddde3] pl-10" // Red style
+                              : "border border-[#000000] rounded px-3 py-2" // Base style
                           }`}
                         />
-                        {contactErrors.lastName && (
-                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                        )}
                       </div>
                       {contactErrors.lastName && (
                         <p className="text-red-600 text-xs mt-1">
@@ -187,12 +419,17 @@ export default function ContactFormModal({
                     </div>
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  {/* todo implement account search and selection within the modal itself*/}
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     <span className="text-red-600">*</span> Account Name
-                  </label>
+                  </Label>
                   <div className="relative">
+                    {/* Added Error Icon */}
+                    {contactErrors.accountName && (
+                      <Ban className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-600 z-10" />
+                    )}
                     <Input
                       placeholder="Search Accounts..."
                       value={contactFormData.accountName}
@@ -208,10 +445,10 @@ export default function ContactFormModal({
                           });
                         }
                       }}
-                      className={`w-full rounded px-3 py-2 pr-10 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
+                      className={`w-full text-sm pr-10 ${
                         contactErrors.accountName
-                          ? "border-2 border-red-600"
-                          : "border border-[#dddbda]"
+                          ? "border-red-500 bg-[#fddde3] pl-10" // Red style
+                          : "border border-[#000000] rounded px-3 py-2 pl-3" // Base style
                       }`}
                     />
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
@@ -222,12 +459,12 @@ export default function ContactFormModal({
                     </p>
                   )}
                 </div>
-
                 {/* Title */}
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     Title
-                  </label>
+                  </Label>
                   <Input
                     value={contactFormData.title}
                     onChange={(e) =>
@@ -236,15 +473,15 @@ export default function ContactFormModal({
                         title: e.target.value,
                       })
                     }
-                    className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                    className="w-full border border-[#000000] rounded px-3 py-2 text-sm" // Updated
                   />
                 </div>
-
-                {/* Reports To with Search */}
+                {/* Reports To with Search todo to be implemented - contact search with selection of contact within the modal itself*/}
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     Reports To
-                  </label>
+                  </Label>
                   <div className="relative">
                     <Input
                       placeholder="Search Contacts..."
@@ -255,18 +492,18 @@ export default function ContactFormModal({
                           reportsTo: e.target.value,
                         })
                       }
-                      className="w-full border border-[#dddbda] rounded px-3 py-2 pr-10 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                      className="w-full border border-[#000000] rounded px-3 py-2 pr-10 text-sm" // Updated
                     />
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
                   </div>
                 </div>
-
                 {/* Description */}
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     Description
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea // Updated
                     value={contactFormData.description}
                     onChange={(e) =>
                       setContactFormData({
@@ -274,27 +511,44 @@ export default function ContactFormModal({
                         description: e.target.value,
                       })
                     }
-                    className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-20"
+                    className="w-full border border-[#000000] rounded px-3 py-2 text-sm min-h-20" // Updated
                     style={{
                       fontFamily:
                         'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                     }}
                   />
                 </div>
+                <div>
+                  <Label className="block text-sm text-[#181818]">
+                    Contact Owner
+                  </Label>
+                  <div className="flex items-center gap-1">
+                    <Image
+                      src="/owner-icon.png"
+                      alt=""
+                      width={25}
+                      height={25}
+                    />
+                    <span className="text-sm text-[#181818]">
+                      Rishab Nagwani
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-
             {/* Get in Touch Section */}
             <div>
-              <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
+              <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
+                {/* Updated */}
                 Get in Touch
               </h3>
               <div className="space-y-4">
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     Phone
-                  </label>
+                  </Label>
                   <Input
                     value={contactFormData.phone}
                     onChange={(e) =>
@@ -303,16 +557,20 @@ export default function ContactFormModal({
                         phone: e.target.value,
                       })
                     }
-                    className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                    className="w-full border border-[#000000] rounded px-3 py-2 text-sm" // Updated
                   />
                 </div>
-
                 {/* Email */}
                 <div>
-                  <label className="block text-sm text-[#181818] mb-1">
+                  <Label className="block text-sm text-[#181818] mb-1">
+                    {/* Updated */}
                     <span className="text-red-600">*</span> Email
-                  </label>
+                  </Label>
                   <div className="relative">
+                    {/* Added Error Icon */}
+                    {contactErrors.email && (
+                      <Ban className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-600 z-10" />
+                    )}
                     <Input
                       type="email"
                       value={contactFormData.email}
@@ -328,15 +586,12 @@ export default function ContactFormModal({
                           });
                         }
                       }}
-                      className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
+                      className={`w-full text-sm ${
                         contactErrors.email
-                          ? "border-2 border-red-600 pr-10"
-                          : "border border-[#dddbda]"
+                          ? "border-red-500 bg-[#fddde3] pl-10" // Red style
+                          : "border border-[#000000] rounded px-3 py-2" // Base style
                       }`}
                     />
-                    {contactErrors.email && (
-                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                    )}
                   </div>
                   {contactErrors.email && (
                     <p className="text-red-600 text-xs mt-1">
@@ -344,38 +599,45 @@ export default function ContactFormModal({
                     </p>
                   )}
                 </div>
-
                 {/* Mailing Address */}
                 <div>
-                  <label className="block text-sm text-[#181818] mb-2">
+                  <Label className="block text-sm text-[#181818] mb-2">
+                    {/* Updated */}
                     Mailing Address
-                  </label>
+                  </Label>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs text-[#706e6b] mb-1">
+                      <Label className="block text-xs text-[#000000] mb-1">
+                        {/* Updated */}
                         Mailing Country
-                      </label>
-                      <select
+                      </Label>
+                      <Select // Updated
                         value={contactFormData.mailingCountry}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           setContactFormData({
                             ...contactFormData,
-                            mailingCountry: e.target.value,
+                            mailingCountry: value,
                           })
                         }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                       >
-                        <option value="">--None--</option>
-                        <option value="United States">United States</option>
-                        <option value="Canada">Canada</option>
-                        <option value="United Kingdom">United Kingdom</option>
-                      </select>
+                        <SelectTrigger className="w-full border border-[#000000] rounded px-3 py-2 text-sm">
+                          <SelectValue placeholder="--None--" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allCountries.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <label className="block text-xs text-[#706e6b] mb-1">
+                      <Label className="block text-xs text-[#000000] mb-1">
+                        {/* Updated */}
                         Mailing Street
-                      </label>
-                      <textarea
+                      </Label>
+                      <Textarea // Updated
                         value={contactFormData.mailingStreet}
                         onChange={(e) =>
                           setContactFormData({
@@ -383,7 +645,7 @@ export default function ContactFormModal({
                             mailingStreet: e.target.value,
                           })
                         }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-[60px]"
+                        className="w-full border border-[#000000] rounded px-3 py-2 text-sm min-h-[60px]" // Updated
                         style={{
                           fontFamily:
                             'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -391,9 +653,10 @@ export default function ContactFormModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[#706e6b] mb-1">
+                      <Label className="block text-xs text-[#000000] mb-1">
+                        {/* Updated */}
                         Mailing City
-                      </label>
+                      </Label>
                       <Input
                         value={contactFormData.mailingCity}
                         onChange={(e) =>
@@ -402,14 +665,16 @@ export default function ContactFormModal({
                             mailingCity: e.target.value,
                           })
                         }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                        className="w-full border border-[#000000] rounded px-3 py-2 text-sm" // Updated
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-[#706e6b] mb-1">
+                    <div className="grid grid-cols-3 gap-x-8 gap-y-4">
+                      {/* Updated Grid */}
+                      <div className="col-span-2">
+                        <Label className="block text-xs text-[#000000] mb-1">
+                          {/* Updated */}
                           Mailing Zip/Postal Code
-                        </label>
+                        </Label>
                         <Input
                           value={contactFormData.mailingZipPostalCode}
                           onChange={(e) =>
@@ -418,28 +683,30 @@ export default function ContactFormModal({
                               mailingZipPostalCode: e.target.value,
                             })
                           }
-                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                          className="w-full border border-[#000000] rounded px-3 py-2 text-sm" // Updated
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-[#706e6b] mb-1">
+                        <Label className="block text-xs text-[#000000] mb-1">
+                          {/* Updated */}
                           Mailing State/Province
-                        </label>
-                        <select
+                        </Label>
+                        <Select // Updated
                           value={contactFormData.mailingStateProvince}
-                          onChange={(e) =>
+                          onValueChange={(value) =>
                             setContactFormData({
                               ...contactFormData,
-                              mailingStateProvince: e.target.value,
+                              mailingStateProvince: value,
                             })
                           }
-                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
                         >
-                          <option value="">--None--</option>
-                          <option value="California">California</option>
-                          <option value="New York">New York</option>
-                          <option value="Texas">Texas</option>
-                        </select>
+                          <SelectTrigger className="w-full border border-[#000000] rounded px-3 py-2 text-sm">
+                            <SelectValue placeholder="--None--" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="--None--">--None--</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
@@ -447,32 +714,35 @@ export default function ContactFormModal({
               </div>
             </div>
           </div>
-
-          {/* Modal Footer */}
-          <div className="px-6 py-4 border-t border-[#dddbda] flex items-center justify-end gap-3">
-            <Button
-              onClick={onClose}
-              className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
-            >
-              Cancel
-            </Button>
-            {showSaveAndNew && (
-              <Button
-                onClick={onSaveAndNew}
-                className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
-              >
-                Save & New
-              </Button>
-            )}
-            <Button
-              onClick={onSave}
-              className="bg-[#0176d3] text-white hover:bg-[#0159a8] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 h-9 px-4 text-sm rounded"
-            >
-              Save
-            </Button>
-          </div>
         </div>
-      </div>
-    </div>
+        {/* Modal Footer */}
+        <DialogFooter className="px-6 py-4 border-t border-gray-400 flex-row justify-end gap-3">
+          {/* Updated */}
+          <Button
+            onClick={onClose}
+            className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl" // Updated
+            disabled={isSaving} // Disable Cancel button while saving
+          >
+            Cancel
+          </Button>
+          {!isEditMode && (
+            <Button
+              onClick={onSaveAndNew}
+              className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl" // Updated
+              disabled={isSaving} // Disable Save & New button while saving
+            >
+              Save & New
+            </Button>
+          )}
+          <Button
+            onClick={onSave}
+            className="bg-[#066afe] text-white hover:bg-[#066afe] h-9 px-4 text-sm rounded-4xl" // Updated
+            disabled={isSaving} // Disable Save button while saving
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

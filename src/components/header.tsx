@@ -1,19 +1,24 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, HelpCircle, Settings, Bell, User } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, HelpCircle, Settings, Bell, User } from "lucide-react";
+import Image from "next/image";
 
 export default function Header() {
   return (
     <>
-      <header className="bg-[#066afe] h-[44px] flex items-center justify-between px-4 text-white fixed top-0 left-[68px] right-0 z-50">
-        <div className="flex items-center gap-4">{/* Empty space - logo moved to white bar */}</div>
+      <header className="bg-[#066afe] h-11 flex items-center justify-between px-4 text-white fixed top-0 left-[76px] right-0 z-50">
+        <div className="flex items-center gap-4">
+          {/* Empty space - logo moved to white bar */}
+        </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span>Days left in Starter trial:</span>
-            <span className="font-semibold bg-[#faffbd] text-[#181818] px-2 py-0.5 rounded">18</span>
+            <span className="font-semibold bg-[#faffbd] text-[#181818] px-2 py-0.5 rounded">
+              18
+            </span>
           </div>
           <Button className="bg-white text-[#3e6afe] hover:bg-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 h-8 px-4 text-sm font-semibold rounded-3xl">
             Buy Now
@@ -21,20 +26,23 @@ export default function Header() {
         </div>
       </header>
 
-      <div className="bg-white border-b border-[#dddbda] h-[48px] flex items-center justify-between px-4 fixed top-[44px] left-[68px] right-0 z-50">
+      <div className="bg-white h-12 flex items-center justify-between px-4 fixed top-11 left-[76px] right-0 z-50">
         <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-[#066afe] rounded flex items-center justify-center">
-            <div className="w-6 h-6 bg-white rounded-sm"></div>
-          </div>
+          <Image
+            src="/salesforce-logo.png"
+            alt="Salesforce Logo"
+            width={45}
+            height={45}
+          />
         </div>
 
-        {/* Centered Search Bar */}
-        <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-[600px]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
+        <div className="absolute left-1/2 -translate-x-1/2 w-[400px]">
+          <div className="relative group hover:rounded-lg hover:shadow-black hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150">
+            {" "}
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b] pointer-events-none" />
             <Input
               placeholder="Search..."
-              className="w-full pl-10 bg-white border border-[#dddbda] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 h-9 text-sm text-[#181818] placeholder:text-[#706e6b] rounded"
+              className="rounded-lg w-full pl-10 bg-white border border-black h-9 text-sm text-[#181818] placeholder:text-[#706e6b]"
             />
           </div>
         </div>
@@ -54,5 +62,5 @@ export default function Header() {
         </div>
       </div>
     </>
-  )
+  );
 }

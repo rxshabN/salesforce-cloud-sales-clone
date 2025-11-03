@@ -36,14 +36,34 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
-    const contacts = await prisma.contacts.findMany({
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+
+    const queryOptions: any = {
       include: {
         accounts: {
           select: { name: true },
         },
       },
       orderBy: { created_at: "desc" },
-    });
+    };
+
+    if (search) {
+      queryOptions.where = {
+        OR: [
+          { first_name: { contains: search, mode: "insensitive" } },
+          { last_name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          {
+            accounts: {
+              name: { contains: search, mode: "insensitive" },
+            },
+          },
+        ],
+      };
+    }
+
+    const contacts = await prisma.contacts.findMany(queryOptions);
 
     return NextResponse.json(contacts);
   } catch (error) {

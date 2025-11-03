@@ -122,3 +122,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* For Chrome, Edge, Safari */
+.hide-calendar-icon::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* For Firefox */
+.hide-calendar-icon[type="date"]::-moz-focus-inner {
+  border: 0;
+}
+.hide-calendar-icon[type="date"]::-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #000;
+}

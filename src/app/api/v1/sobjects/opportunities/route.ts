@@ -46,3 +46,42 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+
+    const queryOptions: any = {
+      include: {
+        accounts: {
+          select: { name: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+    };
+
+    if (search) {
+      queryOptions.where = {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          {
+            accounts: {
+              name: { contains: search, mode: "insensitive" },
+            },
+          },
+        ],
+      };
+    }
+
+    const opportunities = await prisma.opportunities.findMany(queryOptions);
+
+    return NextResponse.json(opportunities);
+  } catch (error) {
+    console.error("Error fetching opportunities:", error);
+    return NextResponse.json(
+      { message: "An error occurred while fetching opportunities." },
+      { status: 500 }
+    );
+  }
+}

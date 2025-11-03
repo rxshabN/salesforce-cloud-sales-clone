@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   ChevronDown,
   Pencil,
@@ -10,24 +11,45 @@ import {
   Phone,
   Plus,
   User,
-  AlertTriangle,
   Settings,
   Crown,
   Upload,
-  X,
+  Edit,
   Check,
 } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { ButtonGroup } from "./ui/button-group";
 
 interface OpportunityDetailProps {
   opportunityId: number;
 }
 
+type SalesTab =
+  | "leads"
+  | "contacts"
+  | "accounts"
+  | "opportunities"
+  | "products"
+  | "price-books"
+  | "calendar"
+  | "analytics";
+
 export default function OpportunityDetail({
   opportunityId,
 }: OpportunityDetailProps) {
+  const [activeTab, setActiveTab] = useState<SalesTab>("opportunities");
+  const tabs = [
+    { id: "leads" as SalesTab, label: "Leads" },
+    { id: "contacts" as SalesTab, label: "Contacts" },
+    { id: "accounts" as SalesTab, label: "Accounts" },
+    { id: "opportunities" as SalesTab, label: "Opportunities" },
+    { id: "products" as SalesTab, label: "Products" },
+    { id: "price-books" as SalesTab, label: "Price Books" },
+    { id: "calendar" as SalesTab, label: "Calendar" },
+    { id: "analytics" as SalesTab, label: "Analytics" },
+  ];
   const router = useRouter();
   const { showToast } = useToast();
   const [opportunity, setOpportunity] = useState<any>(null);
@@ -37,9 +59,54 @@ export default function OpportunityDetail({
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [isUpcomingExpanded, setIsUpcomingExpanded] = useState(true);
   const [isGuidanceExpanded, setIsGuidanceExpanded] = useState(true);
-  const [isContactRolesExpanded, setIsContactRolesExpanded] = useState(true);
-  const [isFilesExpanded, setIsFilesExpanded] = useState(true);
   const [isInlineEditing, setIsInlineEditing] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const stages = [
+    "Qualification",
+    "Needs Analysis",
+    "Propose",
+    "Negotiate",
+    "Closed Won",
+  ];
+
+  const getCurrentStageIndex = () => {
+    if (!opportunity) return -1;
+    return stages.indexOf(opportunity.stage);
+  };
+
+  // Add this function to handle mark stage as complete
+  const handleMarkStageComplete = async () => {
+    if (!opportunity) return;
+
+    const currentStageIndex = stages.indexOf(opportunity.stage);
+    if (currentStageIndex === -1 || currentStageIndex === stages.length - 1) {
+      showToast("Cannot progress opportunity stage further.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      return;
+    }
+
+    const nextStage = stages[currentStageIndex + 1];
+
+    try {
+      await axios.patch(`/api/v1/sobjects/opportunities/${opportunityId}`, {
+        stage: nextStage,
+      });
+      showToast(`Opportunity stage updated to "${nextStage}".`, {
+        label: "Undo",
+        onClick: () => console.log("Undo stage change"),
+      });
+      fetchOpportunity();
+    } catch (error) {
+      console.error("Error updating opportunity stage:", error);
+      showToast("Failed to update opportunity stage. Please try again.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    }
+  };
 
   // Form state for inline editing
   const [editFormData, setEditFormData] = useState<any>({});
@@ -109,7 +176,7 @@ export default function OpportunityDetail({
         label: "Dismiss",
         onClick: () => {},
       });
-      router.push("/sales");
+      router.push("/opportunities");
     } catch (error) {
       console.error("Error deleting opportunity:", error);
       showToast("Failed to delete opportunity. Please try again.", {
@@ -149,14 +216,6 @@ export default function OpportunityDetail({
     })}`;
   };
 
-  const stages = [
-    { name: "Qualification", completed: true },
-    { name: "Needs Analysis", completed: true },
-    { name: "Propose", completed: false, current: true },
-    { name: "Negotiate", completed: false },
-    { name: "Closed", completed: false },
-  ];
-
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center bg-[#f3f2f2]">
@@ -174,399 +233,264 @@ export default function OpportunityDetail({
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#f3f2f2]">
-      {/* Opportunity Header */}
-      <div className="bg-white border-b border-[#dddbda] px-6 py-4">
+    <div className="overflow-y-auto h-full flex flex-col bg-[#f3f2f2]">
+      {/* Fixed Header with Tabs */}
+      <div className="fixed bg-white border-b border-gray-200 px-8 py-4 shrink-0 w-full">
         <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <h1 className="text-2xl font-normal text-[#080707]">Sales</h1>
+
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-6">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1 pb-3 font-normal transition-colors relative ${
+                    activeTab === tab.id
+                      ? "text-[#0176d3]"
+                      : "text-gray-700 hover:text-[#0176d3]"
+                  }`}
+                >
+                  {tab.label}
+                  <ChevronDown className="w-4 h-4" />
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#0176d3]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button className="text-gray-600 hover:text-[#0176d3] transition-colors">
+            <Edit className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Opportunity Header */}
+      <div className="bg-transparent px-6 py-4 mt-20">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#f97316] flex items-center justify-center">
               <Crown className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-xs text-[#706e6b]">Opportunity</p>
-              {isInlineEditing ? (
-                <input
-                  type="text"
-                  value={editFormData.opportunity_name}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      opportunity_name: e.target.value,
-                    })
-                  }
-                  className="text-2xl font-normal text-[#181818] border border-[#0176d3] rounded px-2 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                />
-              ) : (
-                <h1 className="text-2xl font-normal text-[#181818]">
-                  {opportunity.opportunity_name}
-                </h1>
-              )}
+              <h1 className="text-2xl font-normal text-[#181818]">
+                {opportunity.opportunity_name}
+              </h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isInlineEditing ? (
-              <>
-                <Button
-                  onClick={() => setIsInlineEditing(false)}
-                  className="bg-white text-[#706e6b] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleInlineSave}
-                  className="bg-[#0176d3] text-white hover:bg-[#014486] h-9 px-4 text-sm rounded"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-                  New Event
-                </Button>
-                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded">
-                  New Task
-                </Button>
-                <Button
-                  onClick={() => setIsInlineEditing(true)}
-                  className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
-                >
-                  Edit
-                </Button>
-                <Button
-                  onClick={handleDelete}
-                  className="bg-white text-red-600 hover:bg-red-50 border border-[#dddbda] h-9 px-4 text-sm rounded"
-                >
-                  Delete
-                </Button>
-              </>
-            )}
+            <ButtonGroup
+              buttons={[
+                {
+                  label: "New Event",
+                  onClick: () =>
+                    showToast("New Event - Coming soon", {
+                      label: "Dismiss",
+                      onClick: () => {},
+                    }),
+                },
+                {
+                  label: "New Task",
+                  onClick: () =>
+                    showToast("New Task - Coming soon", {
+                      label: "Dismiss",
+                      onClick: () => {},
+                    }),
+                },
+                {
+                  label: "Edit",
+                  onClick: () => setIsInlineEditing(true),
+                },
+              ]}
+            />
+            <div className="relative">
+              <Button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                variant="outline"
+                className="h-9 w-9 p-0 border-[#dddbda] bg-white hover:bg-gray-50"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+              {isDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsDropdownOpen(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-[#dddbda] z-20">
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-[#181818] hover:bg-gray-100"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        showToast("Submit for Approval - Coming soon", {
+                          label: "Dismiss",
+                          onClick: () => {},
+                        });
+                      }}
+                    >
+                      Submit for Approval
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-[#181818] hover:bg-gray-100"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        showToast("Share - Coming soon", {
+                          label: "Dismiss",
+                          onClick: () => {},
+                        });
+                      }}
+                    >
+                      Share
+                    </button>
+                    <hr className="border-[#dddbda]" />
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        handleDelete();
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Sales Stage Path */}
-      <div className="bg-white border-b border-[#dddbda] px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center flex-1">
-            <button className="mr-4">
-              <ChevronDown className="w-5 h-5 text-[#706e6b]" />
-            </button>
-            <div className="flex items-center flex-1 max-w-4xl">
-              {stages.map((stage, index) => (
-                <div key={stage.name} className="flex items-center flex-1">
-                  <div
-                    className={`flex-1 h-2 ${
-                      stage.completed
-                        ? "bg-[#4ade80]"
-                        : stage.current
-                        ? "bg-[#0f4c81]"
-                        : "bg-[#e5e7eb]"
-                    } ${index === 0 ? "rounded-l" : ""} ${
-                      index === stages.length - 1 ? "rounded-r" : ""
-                    }`}
-                  />
-                  {index < stages.length - 1 && (
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center -mx-4 z-10 ${
-                        stage.completed
-                          ? "bg-[#4ade80]"
-                          : stages[index + 1].current
-                          ? "bg-[#0f4c81]"
-                          : "bg-[#e5e7eb]"
+        {/* Sales Stage Path */}
+        <div className="bg-white rounded-2xl p-2 mb-4 flex items-center justify-between">
+          <div className="flex items-center">
+            {stages.map((stage, index) => {
+              const currentStageIndex = getCurrentStageIndex();
+              const isCompleted = index < currentStageIndex;
+              const isCurrent = index === currentStageIndex;
+              const isFirst = index === 0;
+              const isLast = index === stages.length - 1;
+
+              return (
+                <div
+                  key={stage}
+                  className={`relative h-10 flex items-center justify-center ${
+                    isCompleted
+                      ? "bg-[#acf3e4]"
+                      : isCurrent
+                      ? "bg-[#032d60]"
+                      : "bg-[#c9c9c9]"
+                  }`}
+                  style={{
+                    width: "200px",
+                    clipPath: isFirst
+                      ? "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 0 0)"
+                      : isLast
+                      ? "polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)"
+                      : "polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)",
+                    ...(isFirst && {
+                      borderTopLeftRadius: "20px",
+                      borderBottomLeftRadius: "20px",
+                    }),
+                    ...(isLast && {
+                      borderTopRightRadius: "20px",
+                      borderBottomRightRadius: "20px",
+                    }),
+                  }}
+                >
+                  {isCompleted ? (
+                    <Check className="w-5 h-5 text-green-700" />
+                  ) : (
+                    <span
+                      className={`text-sm font-medium ${
+                        isCurrent ? "text-white" : "text-[#706e6b]"
                       }`}
                     >
-                      {stage.completed && (
-                        <Check className="w-4 h-4 text-white" />
-                      )}
-                    </div>
+                      {stage}
+                    </span>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-          <Button className="bg-[#0176d3] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded ml-6">
-            <Check className="w-4 h-4 mr-2" />
-            Mark Stage as Complete
-          </Button>
-        </div>
-        <div className="flex items-center mt-2 ml-12">
-          {stages.map((stage, index) => (
-            <div key={stage.name} className="flex-1 text-center">
-              <p
-                className={`text-xs ${
-                  stage.current
-                    ? "font-medium text-[#181818]"
-                    : "text-[#706e6b]"
-                }`}
+
+          {/* Mark Stage as Complete Button */}
+          {getCurrentStageIndex() < stages.length - 1 && (
+            <div className="ml-6">
+              <Button
+                onClick={handleMarkStageComplete}
+                className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl flex items-center gap-2"
               >
-                {stage.name}
+                <Check className="w-4 h-4" />
+                Mark Stage as Complete
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Guidance for Success */}
+        <div className="bg-white rounded-2xl p-4">
+          <button
+            onClick={() => setIsGuidanceExpanded(!isGuidanceExpanded)}
+            className="flex items-center gap-2 w-full text-left"
+          >
+            <ChevronDown
+              className={`w-5 h-5 text-[#706e6b] transition-transform ${
+                !isGuidanceExpanded ? "-rotate-90" : ""
+              }`}
+            />
+            <h2 className="text-base font-normal text-[#181818]">
+              Guidance for Success
+            </h2>
+          </button>
+          {isGuidanceExpanded && (
+            <div className="mt-4 ml-7 space-y-3">
+              <div>
+                <h3 className="text-sm font-medium text-[#181818] mb-2">
+                  Make the offer.
+                </h3>
+                <ul className="text-sm text-[#706e6b] space-y-1 list-disc list-inside">
+                  <li>
+                    Does the quote cover the complete solution discussed with
+                    the customer?
+                  </li>
+                  <li>
+                    Have you presented how our solution meets the
+                    customer&apos;s needs?
+                  </li>
+                </ul>
+              </div>
+              <p className="text-sm text-[#706e6b]">
+                Send detailed price information and prepare updated quotes if
+                changes are needed.
               </p>
             </div>
-          ))}
+          )}
         </div>
-      </div>
-
-      {/* Guidance for Success */}
-      <div className="bg-white border-b border-[#dddbda] px-6 py-4">
-        <button
-          onClick={() => setIsGuidanceExpanded(!isGuidanceExpanded)}
-          className="flex items-center gap-2 w-full text-left"
-        >
-          <ChevronDown
-            className={`w-5 h-5 text-[#706e6b] transition-transform ${
-              !isGuidanceExpanded ? "-rotate-90" : ""
-            }`}
-          />
-          <h2 className="text-base font-normal text-[#181818]">
-            Guidance for Success
-          </h2>
-        </button>
-        {isGuidanceExpanded && (
-          <div className="mt-4 ml-7 space-y-3">
-            <div>
-              <h3 className="text-sm font-medium text-[#181818] mb-2">
-                Make the offer.
-              </h3>
-              <ul className="text-sm text-[#706e6b] space-y-1 list-disc list-inside">
-                <li>
-                  Does the quote cover the complete solution discussed with the
-                  customer?
-                </li>
-                <li>
-                  Have you presented how our solution meets the customer's
-                  needs?
-                </li>
-              </ul>
-            </div>
-            <p className="text-sm text-[#706e6b]">
-              Send detailed price information and prepare updated quotes if
-              changes are needed.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[380px_1fr_380px] gap-0">
-          {/* Left Column - About, Status, History */}
-          <div className="bg-white border-r border-[#dddbda] p-6 space-y-6">
-            {/* Top Summary */}
-            <div className="space-y-3 pb-6 border-b border-[#dddbda]">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-xs text-[#706e6b] mb-1">Amount</p>
-                  {isInlineEditing ? (
-                    <input
-                      type="number"
-                      value={editFormData.amount}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          amount: e.target.value,
-                        })
-                      }
-                      className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                    />
-                  ) : (
-                    <p className="text-sm text-[#181818]">
-                      {formatAmount(opportunity.amount)}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-xs text-[#706e6b] mb-1">Description</p>
-                  {isInlineEditing ? (
-                    <textarea
-                      value={editFormData.description}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={2}
-                      className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                    />
-                  ) : (
-                    <p className="text-sm text-[#181818]">
-                      {opportunity.description || "-"}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-[#706e6b] mb-1">
-                    Opportunity Owner
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <a
-                      href="#"
-                      className="text-sm text-[#0176d3] hover:underline"
-                    >
-                      {opportunity.opportunity_owner || "-"}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Section */}
-            <div>
-              <button
-                onClick={() => setIsStatusExpanded(!isStatusExpanded)}
-                className="flex items-center gap-2 w-full text-left mb-4"
-              >
-                <ChevronDown
-                  className={`w-5 h-5 text-[#706e6b] transition-transform ${
-                    !isStatusExpanded ? "-rotate-90" : ""
-                  }`}
-                />
-                <h2 className="text-base font-normal text-[#181818]">Status</h2>
-              </button>
-              {isStatusExpanded && (
-                <div className="space-y-4 pl-7">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">Stage</p>
-                      {isInlineEditing ? (
-                        <select
-                          value={editFormData.stage}
-                          onChange={(e) =>
-                            setEditFormData({
-                              ...editFormData,
-                              stage: e.target.value,
-                            })
-                          }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                        >
-                          <option value="">--None--</option>
-                          <option value="Qualification">Qualification</option>
-                          <option value="Needs Analysis">Needs Analysis</option>
-                          <option value="Propose">Propose</option>
-                          <option value="Negotiate">Negotiate</option>
-                          <option value="Closed Won">Closed Won</option>
-                          <option value="Closed Lost">Closed Lost</option>
-                        </select>
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {opportunity.stage || "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">
-                        Probability (%)
-                      </p>
-                      {isInlineEditing ? (
-                        <input
-                          type="number"
-                          value={editFormData.probability}
-                          onChange={(e) =>
-                            setEditFormData({
-                              ...editFormData,
-                              probability: e.target.value,
-                            })
-                          }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                        />
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {opportunity.probability
-                            ? `${opportunity.probability}%`
-                            : "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">
-                        Forecast Category
-                      </p>
-                      {isInlineEditing ? (
-                        <select
-                          value={editFormData.forecast_category}
-                          onChange={(e) =>
-                            setEditFormData({
-                              ...editFormData,
-                              forecast_category: e.target.value,
-                            })
-                          }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                        >
-                          <option value="">--None--</option>
-                          <option value="Pipeline">Pipeline</option>
-                          <option value="Best Case">Best Case</option>
-                          <option value="Commit">Commit</option>
-                          <option value="Omitted">Omitted</option>
-                          <option value="Closed">Closed</option>
-                        </select>
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {opportunity.forecast_category || "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">Next Step</p>
-                      {isInlineEditing ? (
-                        <input
-                          type="text"
-                          value={editFormData.next_step}
-                          onChange={(e) =>
-                            setEditFormData({
-                              ...editFormData,
-                              next_step: e.target.value,
-                            })
-                          }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                        />
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {opportunity.next_step || "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* About Section */}
-            <div>
-              <button
-                onClick={() => setIsAboutExpanded(!isAboutExpanded)}
-                className="flex items-center gap-2 w-full text-left mb-4"
-              >
-                <ChevronDown
-                  className={`w-5 h-5 text-[#706e6b] transition-transform ${
-                    !isAboutExpanded ? "-rotate-90" : ""
-                  }`}
-                />
-                <h2 className="text-base font-normal text-[#181818]">About</h2>
-              </button>
-              {isAboutExpanded && (
-                <div className="space-y-4 pl-7">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">
-                        Opportunity Name
-                      </p>
-                      {isInlineEditing ? (
+      <div className="flex-1">
+        <div className="grid grid-cols-[380px_1fr_380px] gap-4 p-3">
+          {/* Left Column */}
+          <div className="bg-white border-r border-[#dddbda] p-2 space-y-6 rounded-2xl">
+            {isInlineEditing ? (
+              <div className="flex-1 bg-white py-2 px-4">
+                <h2 className="text-xl font-normal text-[#181818] mb-2">
+                  Edit Opportunity Information
+                </h2>
+                <div className="max-w-4xl space-y-6 px-3">
+                  {/* About Section */}
+                  <div>
+                    <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
+                      About
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 -mx-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Opportunity Name
+                        </label>
                         <input
                           type="text"
                           value={editFormData.opportunity_name}
@@ -576,54 +500,13 @@ export default function OpportunityDetail({
                               opportunity_name: e.target.value,
                             })
                           }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
                         />
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {opportunity.opportunity_name || "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">
-                        Account Name
-                      </p>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        {opportunity.account_name || "-"}
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">Close Date</p>
-                      {isInlineEditing ? (
-                        <input
-                          type="date"
-                          value={editFormData.close_date}
-                          onChange={(e) =>
-                            setEditFormData({
-                              ...editFormData,
-                              close_date: e.target.value,
-                            })
-                          }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
-                        />
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {formatCloseDate(opportunity.close_date)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">Amount</p>
-                      {isInlineEditing ? (
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Amount
+                        </label>
                         <input
                           type="number"
                           value={editFormData.amount}
@@ -633,19 +516,29 @@ export default function OpportunityDetail({
                               amount: e.target.value,
                             })
                           }
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
                         />
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {formatAmount(opportunity.amount)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-[#706e6b] mb-1">Description</p>
-                      {isInlineEditing ? (
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Close Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editFormData.close_date}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              close_date: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Description
+                        </label>
                         <textarea
                           value={editFormData.description}
                           onChange={(e) =>
@@ -654,105 +547,438 @@ export default function OpportunityDetail({
                               description: e.target.value,
                             })
                           }
-                          rows={3}
-                          className="text-sm text-[#181818] w-full border border-[#0176d3] rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#0176d3]"
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm min-h-20"
                         />
-                      ) : (
-                        <p className="text-sm text-[#181818]">
-                          {opportunity.description || "-"}
-                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status Section */}
+                  <div>
+                    <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
+                      Status
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 -mx-4">
+                      <div>
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Stage
+                        </label>
+                        <select
+                          value={editFormData.stage}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              stage: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
+                        >
+                          <option value="">--None--</option>
+                          <option value="Qualification">Qualification</option>
+                          <option value="Needs Analysis">Needs Analysis</option>
+                          <option value="Propose">Propose</option>
+                          <option value="Negotiate">Negotiate</option>
+                          <option value="Closed Won">Closed Won</option>
+                          <option value="Closed Lost">Closed Lost</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Probability (%)
+                        </label>
+                        <input
+                          type="number"
+                          value={editFormData.probability}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              probability: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Forecast Category
+                        </label>
+                        <select
+                          value={editFormData.forecast_category}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              forecast_category: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
+                        >
+                          <option value="">--None--</option>
+                          <option value="Pipeline">Pipeline</option>
+                          <option value="Best Case">Best Case</option>
+                          <option value="Commit">Commit</option>
+                          <option value="Omitted">Omitted</option>
+                          <option value="Closed">Closed</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#181818] mb-1">
+                          Next Step
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.next_step}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              next_step: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
+                    <Button
+                      onClick={() => setIsInlineEditing(false)}
+                      className="bg-white text-[#066afe] hover:bg-gray-50 border border-black h-9 px-4 text-sm rounded-4xl"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleInlineSave}
+                      className="bg-[#066afe] text-white hover:bg-[#0159a8] h-9 px-4 text-sm rounded-4xl"
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Top Summary */}
+                <div className="space-y-3 pb-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-[#706e6b] mb-1">Amount</p>
+                      <p className="text-sm text-[#181818]">
+                        {formatAmount(opportunity.amount)}
+                      </p>
+                    </div>
+                    <Pencil
+                      className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                      onClick={() => setIsInlineEditing(true)}
+                    />
+                  </div>
+                  <hr className="w-full h-px -mt-2 border-black" />
+                  {opportunity.description && (
+                    <>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-[#706e6b] mb-1">
+                            Description
+                          </p>
+                          <p className="text-sm text-[#181818]">
+                            {opportunity.description}
+                          </p>
+                        </div>
+                        <Pencil
+                          className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                          onClick={() => setIsInlineEditing(true)}
+                        />
+                      </div>
+                      <hr className="w-full h-px -mt-2 border-black" />
+                    </>
+                  )}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-[#706e6b] mb-1">
+                        Opportunity Owner
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/owner-icon.png"
+                          alt=""
+                          width={20}
+                          height={20}
+                        />
+                        <span className="text-sm text-[#0176d3]">
+                          {opportunity.opportunity_owner}
+                        </span>
+                      </div>
+                    </div>
+                    <User className="w-4 h-4 text-[#0176d3] cursor-pointer" />
+                  </div>
+                </div>
+
+                {/* Status Section */}
+                <div>
+                  <button
+                    onClick={() => setIsStatusExpanded(!isStatusExpanded)}
+                    className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl"
+                  >
+                    <ChevronDown
+                      className={`w-5 h-5 text-[#706e6b] transition-transform ${
+                        !isStatusExpanded ? "-rotate-90" : ""
+                      }`}
+                    />
+                    <h2 className="text-base font-normal text-[#181818]">
+                      Status
+                    </h2>
+                  </button>
+                  {isStatusExpanded && (
+                    <div className="space-y-4 pl-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-[#706e6b] mb-1">Stage</p>
+                          <p className="text-sm text-[#181818]">
+                            {opportunity.stage || "—"}
+                          </p>
+                        </div>
+                        <Pencil
+                          className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                          onClick={() => setIsInlineEditing(true)}
+                        />
+                      </div>
+                      <hr className="w-full h-px -mt-2 border-black" />
+                      {opportunity.probability && (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-[#706e6b] mb-1">
+                                Probability (%)
+                              </p>
+                              <p className="text-sm text-[#181818]">
+                                {opportunity.probability}%
+                              </p>
+                            </div>
+                            <Pencil
+                              className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                              onClick={() => setIsInlineEditing(true)}
+                            />
+                          </div>
+                          <hr className="w-full h-px -mt-2 border-black" />
+                        </>
+                      )}
+                      {opportunity.forecast_category && (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-[#706e6b] mb-1">
+                                Forecast Category
+                              </p>
+                              <p className="text-sm text-[#181818]">
+                                {opportunity.forecast_category}
+                              </p>
+                            </div>
+                            <Pencil
+                              className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                              onClick={() => setIsInlineEditing(true)}
+                            />
+                          </div>
+                          <hr className="w-full h-px -mt-2 border-black" />
+                        </>
+                      )}
+                      {opportunity.next_step && (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-[#706e6b] mb-1">
+                                Next Step
+                              </p>
+                              <p className="text-sm text-[#181818]">
+                                {opportunity.next_step}
+                              </p>
+                            </div>
+                            <Pencil
+                              className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                              onClick={() => setIsInlineEditing(true)}
+                            />
+                          </div>
+                          <hr className="w-full h-px -mt-2 border-black" />
+                        </>
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* History Section */}
-            <div>
-              <button
-                onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-                className="flex items-center gap-2 w-full text-left mb-4"
-              >
-                <ChevronDown
-                  className={`w-5 h-5 text-[#706e6b] transition-transform ${
-                    !isHistoryExpanded ? "-rotate-90" : ""
-                  }`}
-                />
-                <h2 className="text-base font-normal text-[#181818]">
-                  History
-                </h2>
-              </button>
-              {isHistoryExpanded && (
-                <div className="space-y-4 pl-7">
-                  <div>
-                    <p className="text-xs text-[#706e6b] mb-1">Created By</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
+                {/* About Section */}
+                <div>
+                  <button
+                    onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+                    className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl"
+                  >
+                    <ChevronDown
+                      className={`w-5 h-5 text-[#706e6b] transition-transform ${
+                        !isAboutExpanded ? "-rotate-90" : ""
+                      }`}
+                    />
+                    <h2 className="text-base font-normal text-[#181818]">
+                      About
+                    </h2>
+                  </button>
+                  {isAboutExpanded && (
+                    <div className="space-y-4 pl-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-[#706e6b] mb-1">
+                            Opportunity Name
+                          </p>
+                          <p className="text-sm text-[#181818]">
+                            {opportunity.opportunity_name}
+                          </p>
+                        </div>
+                        <Pencil
+                          className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                          onClick={() => setIsInlineEditing(true)}
+                        />
                       </div>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        {opportunity.opportunity_owner || "-"}
-                      </a>
-                    </div>
-                    <p className="text-xs text-[#706e6b] mt-1">
-                      {formatDate(opportunity.created_at)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#706e6b] mb-1">
-                      Last Modified By
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
+                      <hr className="w-full h-px -mt-2 border-black" />
+                      {opportunity.accounts && (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-[#706e6b] mb-1">
+                                Account Name
+                              </p>
+                              <p className="text-sm text-[#0176d3]">
+                                {opportunity.accounts.name}
+                              </p>
+                            </div>
+                          </div>
+                          <hr className="w-full h-px -mt-2 border-black" />
+                        </>
+                      )}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-[#706e6b] mb-1">
+                            Close Date
+                          </p>
+                          <p className="text-sm text-[#181818]">
+                            {formatCloseDate(opportunity.close_date)}
+                          </p>
+                        </div>
+                        <Pencil
+                          className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                          onClick={() => setIsInlineEditing(true)}
+                        />
                       </div>
-                      <a
-                        href="#"
-                        className="text-sm text-[#0176d3] hover:underline"
-                      >
-                        {opportunity.opportunity_owner || "-"}
-                      </a>
+                      <hr className="w-full h-px -mt-2 border-black" />
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-[#706e6b] mb-1">Amount</p>
+                          <p className="text-sm text-[#181818]">
+                            {formatAmount(opportunity.amount)}
+                          </p>
+                        </div>
+                        <Pencil
+                          className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                          onClick={() => setIsInlineEditing(true)}
+                        />
+                      </div>
+                      <hr className="w-full h-px -mt-2 border-black" />
+                      {opportunity.description && (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-[#706e6b] mb-1">
+                                Description
+                              </p>
+                              <p className="text-sm text-[#181818]">
+                                {opportunity.description}
+                              </p>
+                            </div>
+                            <Pencil
+                              className="w-4 h-4 text-[#706e6b] cursor-pointer"
+                              onClick={() => setIsInlineEditing(true)}
+                            />
+                          </div>
+                          <hr className="w-full h-px -mt-2 border-black" />
+                        </>
+                      )}
                     </div>
-                    <p className="text-xs text-[#706e6b] mt-1">
-                      {formatDate(opportunity.updated_at)}
-                    </p>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* History Section */}
+                <div>
+                  <button
+                    onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                    className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl"
+                  >
+                    <ChevronDown
+                      className={`w-5 h-5 text-[#706e6b] transition-transform ${
+                        !isHistoryExpanded ? "-rotate-90" : ""
+                      }`}
+                    />
+                    <h2 className="text-base font-normal text-[#181818]">
+                      History
+                    </h2>
+                  </button>
+                  {isHistoryExpanded && (
+                    <div className="space-y-4 pl-3">
+                      <div>
+                        <p className="text-xs text-[#706e6b] mb-1">
+                          Created By
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src="/owner-icon.png"
+                            alt=""
+                            width={20}
+                            height={20}
+                          />
+                          <span className="text-sm text-[#0176d3]">
+                            {opportunity.opportunity_owner}
+                          </span>
+                          <span className="text-sm text-[#706e6b]">
+                            , {formatDate(opportunity.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#706e6b] mb-1">
+                          Last Modified By
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src="/owner-icon.png"
+                            alt=""
+                            width={20}
+                            height={20}
+                          />
+                          <span className="text-sm text-[#0176d3]">
+                            {opportunity.opportunity_owner}
+                          </span>
+                          <span className="text-sm text-[#706e6b]">
+                            , {formatDate(opportunity.updated_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Middle Column - Activity Timeline */}
-          <div className="bg-[#f3f2f2] p-6">
+          <div className="bg-white p-6 rounded-2xl">
             {/* Action Buttons */}
             <div className="flex items-center gap-2 mb-6">
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Mail className="w-5 h-5 text-[#706e6b]" />
               </button>
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Calendar className="w-5 h-5 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
               </button>
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Phone className="w-5 h-5 text-[#706e6b]" />
               </button>
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Plus className="w-5 h-5 text-[#706e6b]" />
-              </button>
-              <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
-                <ChevronDown className="w-3 h-3 text-[#706e6b]" />
               </button>
             </div>
 
@@ -803,28 +1029,26 @@ export default function OpportunityDetail({
                       more.
                     </p>
                   </div>
-                  <div className="mt-4 bg-[#f3f2f2] rounded p-4 flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-[#706e6b] shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#706e6b]">
-                      To change what's shown, try changing your filters.
-                    </p>
-                  </div>
                 </div>
               )}
             </div>
 
             {/* Show All Activities Button */}
             <div className="text-center">
-              <Button className="bg-[#0176d3] text-white hover:bg-[#0159a8] h-9 px-6 text-sm rounded">
+              <Button className="bg-[#066afe] rounded-4xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
               </Button>
             </div>
           </div>
 
-          {/* Right Column - Slack Channel & Related Lists */}
-          <div className="bg-white border-l border-[#dddbda] p-6 space-y-6">
+          {/* Right Column - Related Lists */}
+          <div className="bg-white rounded-2xl border-l border-[#dddbda] p-6">
+            <h2 className="text-lg font-normal text-[#181818] mb-6">
+              Collaboration & Files
+            </h2>
+
             {/* Slack Channel */}
-            <div className="border border-[#dddbda] rounded p-6">
+            <div className="mb-6 border border-[#dddbda] rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6">
                   <svg viewBox="0 0 24 24" fill="none">
@@ -838,137 +1062,45 @@ export default function OpportunityDetail({
                   Slack Channel
                 </h3>
               </div>
-              <div className="mb-4">
-                <img
-                  src="/placeholder.svg?height=120&width=300"
-                  alt="Slack collaboration"
-                  className="w-full h-auto"
-                />
-              </div>
-              <h4 className="text-lg font-medium text-[#181818] mb-2">
-                Better collaboration with Slack
-              </h4>
-              <p className="text-sm text-[#706e6b] mb-2">
-                Slack Channels in Salesforce are a place to collaborate and talk
-                about your work. Anyone can follow the conversation here or in
-                the Slack app.{" "}
-                <a href="#" className="text-[#0176d3] hover:underline">
-                  Learn more about Slack
-                </a>
+              <p className="text-sm text-[#706e6b] mb-4">
+                Collaborate with your team in Slack. Link or create a channel
+                for this opportunity.
               </p>
-              <div className="flex items-center gap-2 py-3 border-t border-[#dddbda] mt-4">
-                <button className="text-[#706e6b] hover:text-[#181818]">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
-                <button className="text-[#706e6b] hover:text-[#181818]">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p className="text-xs text-[#706e6b] mt-2">
-                Post an update on this opportunity or @mention someone to start
-                the conversation.
-              </p>
-              <p className="text-xs text-[#0176d3] mt-2">
-                Already using Slack?{" "}
-                <a href="#" className="hover:underline">
-                  Link an existing channel
-                </a>
-              </p>
+              <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#0176d3] h-9 px-4 text-sm rounded w-full">
+                Link Channel
+              </Button>
             </div>
 
             {/* Contact Roles */}
-            <div className="border border-[#dddbda] rounded">
-              <button
-                onClick={() =>
-                  setIsContactRolesExpanded(!isContactRolesExpanded)
-                }
-                className="w-full flex items-center justify-between p-4 border-b border-[#dddbda]"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#9b59b6] flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-sm font-medium text-[#181818]">
-                    Contact Roles (0)
-                  </h3>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-[#706e6b] transition-transform ${
-                    !isContactRolesExpanded ? "-rotate-90" : ""
-                  }`}
-                />
-              </button>
-              {isContactRolesExpanded && (
-                <div className="p-4">
-                  <p className="text-sm text-[#706e6b] text-center py-4">
-                    No contact roles to display
-                  </p>
-                </div>
-              )}
+            <div className="mb-6">
+              <div className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl">
+                <User className="w-4 h-4 text-[#9b59b6]" />
+                <h3 className="text-base font-normal text-[#181818]">
+                  Contact Roles (0)
+                </h3>
+              </div>
+              <div className="bg-[#f3f2f2] rounded p-6 text-center">
+                <p className="text-sm text-[#706e6b] mb-2">
+                  No contact roles to display.
+                </p>
+              </div>
             </div>
 
             {/* Files */}
-            <div className="border border-[#dddbda] rounded">
-              <button
-                onClick={() => setIsFilesExpanded(!isFilesExpanded)}
-                className="w-full flex items-center justify-between p-4 border-b border-[#dddbda]"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#706e6b] flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z" />
-                      <path d="M13 2v7h7" />
-                    </svg>
-                  </div>
-                  <h3 className="text-sm font-medium text-[#181818]">
-                    Files (0)
-                  </h3>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-[#706e6b] transition-transform ${
-                    !isFilesExpanded ? "-rotate-90" : ""
-                  }`}
-                />
-              </button>
-              {isFilesExpanded && (
-                <div className="p-4">
-                  <div className="border-2 border-dashed border-[#dddbda] rounded p-8 text-center">
-                    <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#dddbda] h-9 px-4 text-sm rounded mb-2">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Files
-                    </Button>
-                    <p className="text-xs text-[#706e6b]">Or drop files</p>
-                  </div>
-                </div>
-              )}
+            <div>
+              <div className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl">
+                <Upload className="w-4 h-4 text-[#706e6b]" />
+                <h3 className="text-base font-normal text-[#181818]">
+                  Files (0)
+                </h3>
+              </div>
+              <div className="border-2 border-dashed border-[#dddbda] rounded-lg p-8 text-center">
+                <Button className="bg-white text-[#0176d3] hover:bg-gray-50 border border-[#0176d3] h-9 px-4 text-sm rounded mb-2">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Files
+                </Button>
+                <p className="text-xs text-[#706e6b]">Or drop files</p>
+              </div>
             </div>
           </div>
         </div>

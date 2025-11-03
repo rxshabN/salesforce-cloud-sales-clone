@@ -29,7 +29,7 @@ export default function RootLayout({
         <ToastProvider>
           <Header />
           <Sidebar />
-          <main className="fixed top-[92px] left-[68px] right-0 bottom-12 overflow-hidden">
+          <main className="fixed top-[92px] left-[76px] right-0 bottom-12 overflow-hidden">
             {children}
           </main>
           <ToDoList />

@@ -1,31 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import axios from "axios";
-// Import only necessary icons from lucide-react
 import {
   Search,
   ChevronDown,
   ChevronRight,
   RefreshCw,
-  Pencil,
   X,
-  Calendar,
-  AlertCircle,
   Sparkles,
   BarChart3,
   ExternalLink,
-  Users,
-  User,
   SettingsIcon,
-  Building2,
-  Briefcase,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Label,
+} from "recharts";
 import { useToast } from "@/components/toast-provider";
 import ContactFormModal from "@/components/modals/contact-form-modal";
+import Image from "next/image";
+import LeadFormModal from "./modals/lead-form-modal";
+import OpportunityFormModal from "./modals/opportunity-form-modal";
 
 // Initial state for lead form
 const initialLeadFormData = {
@@ -47,6 +52,7 @@ const initialLeadFormData = {
   annualRevenue: "",
   leadSource: "",
   industry: "",
+  status: "",
 };
 
 // Initial state for contact form
@@ -80,8 +86,30 @@ const initialOpportunityFormData = {
   nextStep: "",
 };
 
+interface OpportunityStageData {
+  name: string;
+  count: number;
+}
+
 export default function SalesforceDashboard() {
   const { showToast } = useToast();
+  const [leads, setLeads] = useState<any[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(true);
+  const [lastFetchedLeads, setLastFetchedLeads] = useState<Date | null>(null);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(true);
+  const [lastFetchedContacts, setLastFetchedContacts] = useState<Date | null>(
+    null
+  );
+  const [opportunityStageData, setOpportunityStageData] = useState<
+    OpportunityStageData[]
+  >([]);
+  const [opportunitiesLoading, setOpportunitiesLoading] = useState(true);
+  const [lastFetchedOpportunities, setLastFetchedOpportunities] =
+    useState<Date | null>(null);
+  const [leadSearch, setLeadSearch] = useState("");
+  const [contactSearch, setContactSearch] = useState("");
+  const [opportunitySearch, setOpportunitySearch] = useState("");
 
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false);
@@ -98,10 +126,12 @@ export default function SalesforceDashboard() {
   >({});
 
   const [leadFormData, setLeadFormData] = useState(initialLeadFormData);
-  const [contactFormData, setContactFormData] = useState(initialContactFormData);
-  const [opportunityFormData, setOpportunityFormData] = useState(initialOpportunityFormData);
-
-  // const [currentPage, setCurrentPage] = useState<"home" | "contacts">("home")
+  const [contactFormData, setContactFormData] = useState(
+    initialContactFormData
+  );
+  const [opportunityFormData, setOpportunityFormData] = useState(
+    initialOpportunityFormData
+  );
 
   const resetLeadForm = () => {
     setLeadFormData(initialLeadFormData);
@@ -153,6 +183,105 @@ export default function SalesforceDashboard() {
     setOpportunityErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
+  const fetchLeads = async (query: string = "") => {
+    setLeadsLoading(true);
+    try {
+      const url = query
+        ? `/api/v1/sobjects/leads?search=${encodeURIComponent(query)}`
+        : "/api/v1/sobjects/leads";
+      const response = await axios.get(url);
+      setLeads(response.data.slice(0, 3));
+      setLastFetchedLeads(new Date());
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+      showToast("Failed to fetch leads.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    } finally {
+      setLeadsLoading(false);
+    }
+  };
+
+  const fetchContacts = async (query: string = "") => {
+    setContactsLoading(true);
+    try {
+      const url = query
+        ? `/api/v1/sobjects/contacts?search=${encodeURIComponent(query)}`
+        : "/api/v1/sobjects/contacts";
+      const response = await axios.get(url);
+      setContacts(response.data.slice(0, 3));
+      setLastFetchedContacts(new Date());
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      showToast("Failed to fetch contacts.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  const fetchOpportunities = async (query: string = "") => {
+    setOpportunitiesLoading(true);
+    try {
+      const url = query
+        ? `/api/v1/sobjects/opportunities?search=${encodeURIComponent(query)}`
+        : "/api/v1/sobjects/opportunities";
+      const response = await axios.get(url);
+      const allOpportunities = response.data;
+      const stageCounts = allOpportunities.reduce(
+        (acc: { [key: string]: number }, opp: any) => {
+          const stage = opp.stage || "Unknown";
+          acc[stage] = (acc[stage] || 0) + 1;
+          return acc;
+        },
+        {}
+      );
+      const chartData: OpportunityStageData[] = Object.keys(stageCounts).map(
+        (stage) => ({
+          name: stage,
+          count: stageCounts[stage],
+        })
+      );
+      setOpportunityStageData(chartData);
+      setLastFetchedOpportunities(new Date());
+    } catch (error) {
+      console.error("Error fetching opportunities:", error);
+      setOpportunityStageData([
+        { name: "Propose", count: 1 },
+        { name: "Closed Lost", count: 1 },
+      ]);
+    } finally {
+      setOpportunitiesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+    fetchContacts();
+    fetchOpportunities();
+  }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(() => fetchLeads(leadSearch), 300);
+    return () => clearTimeout(handler);
+  }, [leadSearch]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => fetchContacts(contactSearch), 300);
+    return () => clearTimeout(handler);
+  }, [contactSearch]);
+
+  useEffect(() => {
+    const handler = setTimeout(
+      () => fetchOpportunities(opportunitySearch),
+      300
+    );
+    return () => clearTimeout(handler);
+  }, [opportunitySearch]);
 
   const handleLeadSave = async () => {
     if (!validateLeadForm()) return;
@@ -264,18 +393,19 @@ export default function SalesforceDashboard() {
 
   const handleContactSave = async () => {
     if (!validateContactForm()) return;
-
     try {
-      // Note: For now, we're using a placeholder account_id of 1
-      // In a real application, you would need to lookup or create the account first
+      const accountId = await getOrCreateAccountId(contactFormData.accountName);
+      if (!accountId) {
+        return;
+      }
       const contactData = {
-        account_id: 1,
+        account_id: accountId,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
         title: contactFormData.title || null,
         description: contactFormData.description || null,
-        contact_owner: "Rishab Nagwani", // Default owner
+        contact_owner: "Rishab Nagwani",
         email: contactFormData.email,
         phone: contactFormData.phone || null,
         reports_to_contact_id: null,
@@ -285,9 +415,10 @@ export default function SalesforceDashboard() {
         mailing_zip_postal_code: contactFormData.mailingZipPostalCode || null,
         mailing_state_province: contactFormData.mailingStateProvince || null,
       };
-
-      const response = await axios.post("/api/v1/sobjects/contacts", contactData);
-
+      const response = await axios.post(
+        "/api/v1/sobjects/contacts",
+        contactData
+      );
       if (response.status === 201) {
         setIsNewContactModalOpen(false);
         resetContactForm();
@@ -298,6 +429,7 @@ export default function SalesforceDashboard() {
             onClick: () => console.log("Undo contact creation"),
           }
         );
+        fetchContacts();
       }
     } catch (error) {
       console.error("Error creating contact:", error);
@@ -312,10 +444,12 @@ export default function SalesforceDashboard() {
     if (!validateContactForm()) return;
 
     try {
-      // Note: For now, we're using a placeholder account_id of 1
-      // In a real application, you would need to lookup or create the account first
+      const accountId = await getOrCreateAccountId(contactFormData.accountName);
+      if (!accountId) {
+        return;
+      }
       const contactData = {
-        account_id: 1,
+        account_id: accountId,
         salutation: contactFormData.salutation || null,
         first_name: contactFormData.firstName,
         last_name: contactFormData.lastName,
@@ -331,9 +465,10 @@ export default function SalesforceDashboard() {
         mailing_zip_postal_code: contactFormData.mailingZipPostalCode || null,
         mailing_state_province: contactFormData.mailingStateProvince || null,
       };
-
-      const response = await axios.post("/api/v1/sobjects/contacts", contactData);
-
+      const response = await axios.post(
+        "/api/v1/sobjects/contacts",
+        contactData
+      );
       if (response.status === 201) {
         showToast(
           `Contact "${contactFormData.firstName} ${contactFormData.lastName}" was created.`,
@@ -342,7 +477,8 @@ export default function SalesforceDashboard() {
             onClick: () => console.log("Undo contact creation"),
           }
         );
-        resetContactForm(); // Reset form but keep modal open
+        resetContactForm();
+        fetchContacts();
       }
     } catch (error) {
       console.error("Error creating contact:", error);
@@ -358,14 +494,61 @@ export default function SalesforceDashboard() {
     resetContactForm();
   };
 
+  const getOrCreateAccountId = async (
+    accountName: string
+  ): Promise<number | null> => {
+    if (!accountName.trim()) {
+      showToast("Account Name is required.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      return null;
+    }
+    try {
+      const searchResponse = await axios.get(
+        `/api/v1/sobjects/accounts?name=${encodeURIComponent(accountName)}`
+      );
+      const accounts = searchResponse.data || [];
+
+      const exactMatch = accounts.find(
+        (acc: any) => acc.name.toLowerCase() === accountName.toLowerCase()
+      );
+      if (exactMatch) {
+        return exactMatch.id;
+      }
+      const createResponse = await axios.post("/api/v1/sobjects/accounts", {
+        name: accountName,
+        account_owner: "Rishab Nagwani",
+      });
+      if (createResponse.status === 201) {
+        showToast(`New account "${accountName}" created.`, {
+          label: "Dismiss",
+          onClick: () => {},
+        });
+        return createResponse.data.id;
+      }
+      throw new Error("Failed to create account");
+    } catch (error) {
+      console.error("Error in getOrCreateAccountId:", error);
+      showToast("Error finding or creating account.", {
+        label: "Dismiss",
+        onClick: () => {},
+      });
+      return null;
+    }
+  };
+
   const handleOpportunitySave = async () => {
     if (!validateOpportunityForm()) return;
-
     try {
-      // Note: For now, we're using a placeholder account_id of 1
-      // In a real application, you would need to lookup or create the account first
+      const accountId = await getOrCreateAccountId(
+        opportunityFormData.accountName
+      );
+      if (!accountId) {
+        return;
+      }
       const opportunityData = {
-        account_id: 1,
+        account_id: accountId,
         name: opportunityFormData.opportunityName,
         amount: opportunityFormData.amount
           ? parseFloat(opportunityFormData.amount)
@@ -380,12 +563,10 @@ export default function SalesforceDashboard() {
         forecast_category: opportunityFormData.forecastCategory,
         next_step: opportunityFormData.nextStep || null,
       };
-
       const response = await axios.post(
         "/api/v1/sobjects/opportunities",
         opportunityData
       );
-
       if (response.status === 201) {
         setIsNewOpportunityModalOpen(false);
         resetOpportunityForm();
@@ -396,6 +577,7 @@ export default function SalesforceDashboard() {
             onClick: () => console.log("Undo opportunity creation"),
           }
         );
+        fetchOpportunities();
       }
     } catch (error) {
       console.error("Error creating opportunity:", error);
@@ -408,19 +590,22 @@ export default function SalesforceDashboard() {
 
   const handleOpportunitySaveAndNew = async () => {
     if (!validateOpportunityForm()) return;
-
     try {
-      // Note: For now, we're using a placeholder account_id of 1
-      // In a real application, you would need to lookup or create the account first
+      const accountId = await getOrCreateAccountId(
+        opportunityFormData.accountName
+      );
+      if (!accountId) {
+        return;
+      }
       const opportunityData = {
-        account_id: 1,
+        account_id: accountId,
         name: opportunityFormData.opportunityName,
         amount: opportunityFormData.amount
           ? parseFloat(opportunityFormData.amount)
           : null,
         close_date: opportunityFormData.closeDate,
         description: opportunityFormData.description || null,
-        opportunity_owner: "Rishab Nagwani", // Default owner
+        opportunity_owner: "Rishab Nagwani",
         stage: opportunityFormData.stage,
         probability: opportunityFormData.probability
           ? parseFloat(opportunityFormData.probability)
@@ -428,12 +613,10 @@ export default function SalesforceDashboard() {
         forecast_category: opportunityFormData.forecastCategory,
         next_step: opportunityFormData.nextStep || null,
       };
-
       const response = await axios.post(
         "/api/v1/sobjects/opportunities",
         opportunityData
       );
-
       if (response.status === 201) {
         showToast(
           `Opportunity "${opportunityFormData.opportunityName}" was created.`,
@@ -442,7 +625,8 @@ export default function SalesforceDashboard() {
             onClick: () => console.log("Undo opportunity creation"),
           }
         );
-        resetOpportunityForm(); // Reset form but keep modal open
+        resetOpportunityForm();
+        fetchOpportunities();
       }
     } catch (error) {
       console.error("Error creating opportunity:", error);
@@ -470,22 +654,28 @@ export default function SalesforceDashboard() {
               </button>
             </div>
           </div>
-          <Pencil className="w-5 h-5 text-[#0176d3] cursor-pointer hover:-translate-y-0.5 transition-all duration-150" />
+          <Image
+            src="/pencil-icon.png"
+            alt="Edit"
+            width={25}
+            height={25}
+            className="-mr-2"
+          />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           {/* Discovery Banner */}
-          <div className="bg-[#edf4ff] border border-[#c9e0ff] rounded-lg mb-6 overflow-hidden">
+          <div className="bg-[#edf4ff] border border-gray-200 rounded-2xl mb-6 overflow-hidden shadow-sm shadow-gray-500">
             {!isDiscoveryExpanded ? (
               <div
-                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-[#e3f0ff] transition-all duration-150"
+                className="p-7 flex items-center gap-2 cursor-pointer hover:bg-[#e3f0ff] transition-all duration-150"
                 onClick={() => setIsDiscoveryExpanded(true)}
               >
-                <ChevronRight className="w-5 h-5 text-[#706e6b]" />
-                <span className="text-[#181818] text-sm">
-                  Psst! You have more to discover here. 👋
+                <ChevronRight className="w-5 h-5 text-blue-700" />
+                <span className="text-black text-base">
+                  Psst! You have more to discover here. 🌟
                 </span>
               </div>
             ) : (
@@ -539,7 +729,7 @@ export default function SalesforceDashboard() {
                     </h3>
                     <p className="text-[#706e6b] text-sm">
                       Enable a preview of Generative Canvas and ask AI to pull
-                      together the information you're looking for.
+                      together the information you&apos;re looking for.
                     </p>
                   </div>
 
@@ -569,384 +759,422 @@ export default function SalesforceDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column - 50% width */}
             <div className="space-y-6">
               <div className="bg-white border border-[#dddbda] rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-[#dddbda] flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#0176d3] rounded-full flex items-center justify-center">
-                    <div className="w-4 h-4 bg-white rounded-sm"></div>
-                  </div>
-                  <Input
-                    value="All Open Leads"
-                    className="flex-1 border border-[#dddbda] shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded"
-                    readOnly
+                <div className="p-4 flex items-center gap-3">
+                  <Image
+                    src="/leads-logo.png"
+                    alt="Leads Logo"
+                    width={44}
+                    height={44}
                   />
-                  <Search className="w-5 h-5 text-[#706e6b] cursor-pointer hover:text-[#0176d3] hover:-translate-y-0.5 transition-all duration-150" />
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Search Leads..." // Changed
+                      value={leadSearch} // Changed
+                      onChange={(e) => setLeadSearch(e.target.value)} // Added
+                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" // Added pl-8
+                    />
+                    <Search className="w-4 h-4 text-black absolute right-2 top-1/2 -translate-y-1/2" />{" "}
+                  </div>
                   <Button
                     onClick={() => setIsNewLeadModalOpen(true)}
-                    className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-8 px-4 text-sm rounded-full"
+                    className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 transition-all duration-150 border border-black h-8 px-4 text-sm rounded-full"
                   >
                     New
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 border-[#dddbda] bg-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                    className="h-8 w-8 p-0 border-black rounded-4xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
                   >
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-[#fafaf9] border-b border-[#dddbda]">
-                        <th className="text-left px-4 py-3 text-xs font-normal text-[#706e6b]">
-                          Lead Status
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-normal text-[#706e6b]">
-                          First Name
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-normal text-[#706e6b]">
-                          Last Name
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-[#dddbda] hover:bg-[#f3f2f2]">
-                        <td className="px-4 py-3 text-sm text-[#181818]">
-                          Nurturing
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <Link
-                            href="/lead/1"
-                            className="text-[#0176d3] hover:underline"
-                          >
-                            Rishab
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <Link
-                            href="/lead/1"
-                            className="text-[#0176d3] hover:underline"
-                          >
-                            Nagwani
-                          </Link>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="px-4 pb-2">
+                  {" "}
+                  <div className="overflow-x-auto border border-[#dddbda] rounded-lg min-h-[250px]">
+                    {" "}
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-[#dddbda]">
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-[#706e6b]">
+                            Lead Status
+                          </th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-[#706e6b]">
+                            First Name
+                          </th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-[#706e6b]">
+                            Last Name
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {leadsLoading ? (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="text-center p-4 text-sm text-[#706e6b]"
+                            >
+                              Loading...
+                            </td>
+                          </tr>
+                        ) : leads.length > 0 ? (
+                          leads.map((lead) => (
+                            <tr
+                              key={lead.id}
+                              className="border-b border-[#dddbda] hover:bg-[#f3f2f2]"
+                            >
+                              <td className="px-4 py-2 text-sm text-[#181818]">
+                                {lead.status || "-"}
+                              </td>
+                              <td className="px-4 py-2 text-sm">
+                                <Link
+                                  href={`/lead/${lead.id}`}
+                                  className="text-[#0176d3] hover:underline"
+                                >
+                                  {lead.first_name}
+                                </Link>
+                              </td>
+                              <td className="px-4 py-2 text-sm">
+                                <Link
+                                  href={`/lead/${lead.id}`}
+                                  className="text-[#0176d3] hover:underline"
+                                >
+                                  {lead.last_name}
+                                </Link>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="text-center p-4 text-sm text-[#706e6b]"
+                            >
+                              No leads found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
                 <div className="p-4 border-t border-[#dddbda] flex items-center justify-between">
-                  <a
-                    href="#"
+                  <Link
+                    href="/sales"
                     className="text-[#0176d3] text-sm hover:underline"
                   >
                     View Report
-                  </a>
+                  </Link>
                   <div className="flex items-center gap-2 text-[#706e6b] text-xs">
-                    <span>As of today at 2:00 pm</span>
-                    <RefreshCw className="w-4 h-4 cursor-pointer hover:text-[#0176d3] hover:-translate-y-0.5 transition-all duration-150" />
+                    <span>
+                      {lastFetchedLeads
+                        ? `As of today at ${lastFetchedLeads.toLocaleTimeString(
+                            [],
+                            { hour: "numeric", minute: "2-digit", hour12: true }
+                          )}`
+                        : "..."}
+                    </span>
+
+                    <button
+                      onClick={() => fetchLeads()}
+                      className="cursor-pointer text-[#0176d3] hover:text-[#0176d3] transition-all duration-150"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 ${
+                          leadsLoading ? "animate-spin" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
 
               <div className="bg-white border border-[#dddbda] rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-[#dddbda] flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#9333ea] rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-white" />
-                  </div>
-                  <Input
-                    value="My Contacts"
-                    className="flex-1 border border-[#dddbda] shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded"
-                    readOnly
+                <div className="p-4 flex items-center gap-3">
+                  <Image
+                    src="/contacts-logo.png"
+                    alt="Contacts Logo"
+                    width={40}
+                    height={40}
                   />
-                  <Search className="w-5 h-5 text-[#706e6b] cursor-pointer hover:text-[#0176d3] hover:-translate-y-0.5 transition-all duration-150" />
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Search Contacts..." // Changed
+                      value={contactSearch} // Changed
+                      onChange={(e) => setContactSearch(e.target.value)} // Added
+                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" // Added pl-8
+                    />
+                    <Search className="w-4 h-4 text-black absolute right-2 top-1/2 -translate-y-1/2" />{" "}
+                  </div>
                   <Button
                     onClick={() => setIsNewContactModalOpen(true)}
-                    className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-8 px-4 text-sm rounded-full"
+                    className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 transition-all duration-150 border border-black h-8 px-4 text-sm rounded-full"
                   >
                     New
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 border-[#dddbda] bg-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                    className="h-8 w-8 p-0 border-black rounded-4xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
                   >
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-[#fafaf9] border-b border-[#dddbda]">
-                        <th className="text-left px-4 py-3 text-xs font-normal text-[#706e6b]">
-                          First Name
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-normal text-[#706e6b]">
-                          Last Name
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-normal text-[#706e6b]">
-                          Email
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-[#dddbda] hover:bg-[#f3f2f2]">
-                        <td className="px-4 py-3 text-sm">
-                          <a
-                            href="#"
-                            className="text-[#0176d3] hover:underline"
-                          >
-                            meow
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <a
-                            href="#"
-                            className="text-[#0176d3] hover:underline"
-                          >
-                            Nagwani
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[#181818]">
-                          nagwanirishab@gmail.com
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="px-4 pb-2">
+                  <div className="overflow-x-auto border border-[#dddbda] rounded-lg min-h-[250px]">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-[#fafaf9] border-b border-[#dddbda]">
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-[#706e6b]">
+                            First Name
+                          </th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-[#706e6b]">
+                            Last Name
+                          </th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-[#706e6b]">
+                            Email
+                          </th>
+                        </tr>
+                      </thead>
+
+                      {/* 3. Dynamic Table Body */}
+                      <tbody>
+                        {contactsLoading ? (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="text-center p-4 text-sm text-[#706e6b]"
+                            >
+                              Loading...
+                            </td>
+                          </tr>
+                        ) : contacts.length > 0 ? (
+                          contacts.map((contact) => (
+                            <tr
+                              key={contact.id}
+                              className="border-b border-[#dddbda] hover:bg-[#f3f2f2]"
+                            >
+                              <td className="px-4 py-2 text-sm">
+                                <Link
+                                  href={`/contacts/${contact.id}`}
+                                  className="text-[#0176d3] hover:underline"
+                                >
+                                  {contact.first_name}
+                                </Link>
+                              </td>
+                              <td className="px-4 py-2 text-sm">
+                                <Link
+                                  href={`/contacts/${contact.id}`}
+                                  className="text-[#0176d3] hover:underline"
+                                >
+                                  {contact.last_name}
+                                </Link>
+                              </td>
+                              <td className="px-4 py-2 text-sm text-[#181818]">
+                                {contact.email}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="text-center p-4 text-sm text-[#706e6b]"
+                            >
+                              No contacts found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+
                 <div className="p-4 border-t border-[#dddbda] flex items-center justify-between">
-                  <a
-                    href="#"
+                  {/* 4. Functional "View Report" Link */}
+                  <Link
+                    href="/contacts"
                     className="text-[#0176d3] text-sm hover:underline"
                   >
                     View Report
-                  </a>
+                  </Link>
                   <div className="flex items-center gap-2 text-[#706e6b] text-xs">
-                    <span>As of today at 2:01 pm</span>
-                    <RefreshCw className="w-4 h-4 cursor-pointer hover:text-[#0176d3] hover:-translate-y-0.5 transition-all duration-150" />
+                    <span>
+                      {lastFetchedContacts
+                        ? `As of today at ${lastFetchedContacts.toLocaleTimeString(
+                            [],
+                            { hour: "numeric", minute: "2-digit", hour12: true }
+                          )}`
+                        : "..."}
+                    </span>
+                    <button
+                      onClick={() => fetchContacts()}
+                      className="cursor-pointer text-[#0176d3] hover:text-[#0176d3] transition-all duration-150"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 ${
+                          contactsLoading ? "animate-spin" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - 50% width */}
             <div className="space-y-6">
               <div className="bg-white border border-[#dddbda] rounded-lg overflow-hidden">
                 <div className="p-4 border-b border-[#dddbda] flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#f97316] rounded-full flex items-center justify-center">
-                    <div className="w-4 h-4 bg-white rounded-sm"></div>
-                  </div>
-                  <Input
-                    value="My Opportunities"
-                    className="flex-1 border border-[#dddbda] shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded"
-                    readOnly
+                  <Image
+                    src="/opportunities-logo.png"
+                    alt="Opportunities Logo"
+                    width={32}
+                    height={32}
                   />
-                  <Search className="w-5 h-5 text-[#706e6b] cursor-pointer hover:text-[#0176d3] hover:-translate-y-0.5 transition-all duration-150" />
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Search Opportunities..." // Changed
+                      value={opportunitySearch} // Changed
+                      onChange={(e) => setOpportunitySearch(e.target.value)} // Added
+                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" // Added pl-8
+                    />
+                    <Search className="w-4 h-4 text-black absolute right-2 top-1/2 -translate-y-1/2" />{" "}
+                  </div>
                   <Button
                     onClick={() => setIsNewOpportunityModalOpen(true)}
-                    className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-8 px-4 text-sm rounded-full"
+                    className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-sm hover:shadow-black hover:-translate-y-0.5 transition-all duration-150 border border-black h-8 px-4 text-sm rounded-full"
                   >
                     New
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 border-[#dddbda] bg-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                    className="h-8 w-8 p-0 border-black rounded-4xl bg-transparent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 hover:shadow-black"
                   >
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>
                 </div>
+                {/* 2. Dynamic Bar Chart (Horizontal) */}
                 <div className="p-6">
-                  <div className="relative">
-                    {/* Axis labels on top */}
-                    <div className="flex justify-between text-xs text-[#706e6b] mb-2 pl-24">
-                      <span>0</span>
-                      <span>0.1</span>
-                      <span>0.2</span>
-                      <span>0.3</span>
-                      <span>0.4</span>
-                      <span>0.5</span>
-                      <span>0.6</span>
-                      <span>0.7</span>
-                      <span>0.8</span>
-                      <span>0.9</span>
-                      <span>1</span>
-                    </div>
-                    <div className="text-center text-xs text-[#706e6b] mb-4">
-                      Record Count
-                    </div>
-
-                    {/* Chart with grid lines */}
-                    <div className="relative">
-                      {/* Y-axis label */}
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-[#706e6b] whitespace-nowrap">
-                        Stage
-                      </div>
-
-                      {/* Grid lines */}
-                      <div className="absolute left-24 right-0 top-0 bottom-0 flex justify-between pointer-events-none">
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                          <div
-                            key={i}
-                            className="w-px bg-[#e5e7eb] h-full"
-                          ></div>
-                        ))}
-                      </div>
-
-                      <div className="space-y-4 relative">
-                        {/* Propose Stage */}
-                        <div className="flex items-center gap-4">
-                          <div className="w-20 text-sm text-[#181818] text-right">
-                            Propose
-                          </div>
-                          <div className="flex-1 bg-[#e5e7eb] h-12 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[#0176d3]"></div>
-                          </div>
+                  <div className="h-60 w-full">
+                    {" "}
+                    {/* Set a fixed height for the chart container */}
+                    <ResponsiveContainer width="100%" height="100%">
+                      {opportunitiesLoading ? (
+                        <div className="flex items-center justify-center h-full text-sm text-[#706e6b]">
+                          Loading Chart...
                         </div>
-                        {/* Closed Lost Stage */}
-                        <div className="flex items-center gap-4">
-                          <div className="w-20 text-sm text-[#181818] text-right">
-                            Closed Lost
-                          </div>
-                          <div className="flex-1 bg-[#e5e7eb] h-12 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[#0176d3]"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      ) : (
+                        <BarChart
+                          data={opportunityStageData}
+                          layout="vertical" // <-- This is the key prop for a horizontal chart
+                          margin={{
+                            top: 20, // Space for X-axis labels at the top
+                            right: 10,
+                            left: 30, // Space for Y-axis stage names
+                            bottom: 5,
+                          }}
+                        >
+                          {/* Grid lines are now vertical */}
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            horizontal={false}
+                            vertical={true}
+                            stroke="#e5e7eb"
+                          />
+
+                          {/* X-axis (Record Count) is now type="number" and moved to the top */}
+                          <XAxis
+                            type="number"
+                            orientation="top" // <-- Moves axis to the top
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fill: "#706e6b" }}
+                            allowDecimals={false} // Ensure whole numbers for "count"
+                            label={{
+                              value: "Record Count",
+                              position: "top",
+                              dy: -5,
+                              fontSize: 12,
+                              fill: "#706e6b",
+                            }}
+                          />
+
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fill: "#181818" }} // Darker text for stage names
+                            width={100} // Adjust width to fit stage names
+                          >
+                            <Label
+                              value="Stage"
+                              position="left"
+                              angle={-90} // Rotates the label vertically
+                              offset={10} // Pushes it further left
+                              style={{
+                                textAnchor: "middle",
+                                fill: "#706e6b",
+                                fontSize: 12,
+                              }}
+                            />
+                          </YAxis>
+
+                          <Tooltip
+                            cursor={{ fill: "rgba(243, 243, 242, 0.5)" }} // Lighter hover color
+                            contentStyle={{
+                              backgroundColor: "white",
+                              border: "1px solid #dddbda",
+                              borderRadius: "0.5rem",
+                              fontSize: "12px",
+                              boxShadow:
+                                "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+                            }}
+                          />
+
+                          <Bar
+                            dataKey="count"
+                            fill="#0176d3"
+                            radius={[0, 0, 0, 0]}
+                            barSize={100}
+                          />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
                   </div>
                 </div>
+
                 <div className="p-4 border-t border-[#dddbda] flex items-center justify-between">
-                  <a
-                    href="#"
+                  {/* 3. Functional "View Report" Link */}
+                  <Link
+                    href="/sales"
                     className="text-[#0176d3] text-sm hover:underline"
                   >
                     View Report
-                  </a>
+                  </Link>
                   <div className="flex items-center gap-2 text-[#706e6b] text-xs">
-                    <span>As of Today at 2:03 pm</span>
-                    <RefreshCw className="w-4 h-4 cursor-pointer hover:text-[#0176d3] hover:-translate-y-0.5 transition-all duration-150" />
-                  </div>
-                </div>
-              </div>
+                    <span>
+                      {lastFetchedOpportunities
+                        ? `As of today at ${lastFetchedOpportunities.toLocaleTimeString(
+                            [],
+                            { hour: "numeric", minute: "2-digit", hour12: true }
+                          )}`
+                        : "..."}
+                    </span>
 
-              <div className="bg-white border border-[#dddbda] rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-[#dddbda] flex items-center justify-between">
-                  <h2 className="text-sm font-normal text-[#181818]">
-                    Recent Records
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    className="h-8 w-8 p-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="p-4 space-y-3">
-                  {/* Lead - Rishab Nagwani erew */}
-                  <Link
-                    href="/lead/1"
-                    className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
-                  >
-                    <div className="w-8 h-8 bg-[#f97316] rounded-full flex items-center justify-center shrink-0">
-                      <div className="w-4 h-4 bg-white rounded-sm"></div>
-                    </div>
-                    <span className="text-[#0176d3] text-sm hover:underline">
-                      Rishab Nagwani erew
-                    </span>
-                  </Link>
-                  {/* Contact - meow Nagwani */}
-                  <Link
-                    href="/contacts/1"
-                    className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
-                  >
-                    <div className="w-8 h-8 bg-[#9333ea] rounded-full flex items-center justify-center shrink-0">
-                      <Users className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[#0176d3] text-sm hover:underline">
-                      meow Nagwani
-                    </span>
-                  </Link>
-                  {/* Account - Rishab Nagwani */}
-                  <Link
-                    href="/accounts/1"
-                    className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
-                  >
-                    <div className="w-8 h-8 bg-[#06a59a] rounded-full flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[#0176d3] text-sm hover:underline">
-                      Rishab Nagwani
-                    </span>
-                  </Link>
-                  {/* Opportunity - asdasd */}
-                  <Link
-                    href="/opportunities/1"
-                    className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
-                  >
-                    <div className="w-8 h-8 bg-[#3b82f6] rounded-full flex items-center justify-center shrink-0">
-                      <Building2 className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[#0176d3] text-sm hover:underline">
-                      asdasd
-                    </span>
-                  </Link>
-                  {/* Case - Open Cases for Accounts I Own */}
-                  <a
-                    href="#"
-                    className="flex items-center gap-3 hover:bg-[#f3f2f2] p-2 rounded transition-all duration-150"
-                  >
-                    <div className="w-8 h-8 bg-[#06a59a] rounded-full flex items-center justify-center shrink-0">
-                      <Briefcase className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[#0176d3] text-sm hover:underline">
-                      Open Cases for Accounts I Own
-                    </span>
-                  </a>
-                </div>
-              </div>
-
-              {/* Make It Your Home Card */}
-              <div className="bg-white border border-[#dddbda] rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-[#dddbda] flex items-center justify-between">
-                  <h2 className="text-sm font-normal text-[#181818]">
-                    Make It Your Home
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    className="h-8 w-8 p-0 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="p-4">
-                  <p className="text-[#706e6b] text-sm mb-4">
-                    To replace a card, click its action menu and select{" "}
-                    <span className="font-semibold">Change Home Card.</span> Use
-                    the filters on cards to personalize your view even more.
-                  </p>
-                  <div className="bg-linear-to-br from-[#7dd3fc] to-[#3b82f6] rounded-lg p-6 relative overflow-hidden">
-                    <div className="absolute top-4 left-4 w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                      <div className="w-8 h-8 bg-[#0176d3] rounded-full"></div>
-                    </div>
-                    <div className="absolute top-8 right-8 flex gap-2">
-                      <div className="w-16 h-12 bg-white/30 rounded backdrop-blur-sm flex items-center justify-center">
-                        <Search className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="w-12 h-12 bg-[#0176d3] rounded-full flex items-center justify-center">
-                        <div className="w-6 h-6 bg-white rounded"></div>
-                      </div>
-                      <div className="w-12 h-12 bg-[#f97316] rounded-full flex items-center justify-center">
-                        <div className="w-6 h-6 bg-white rounded-full"></div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-4 right-8 bg-white rounded-lg p-3 shadow-lg">
-                      <div className="space-y-1">
-                        <div className="w-32 h-2 bg-gray-200 rounded"></div>
-                        <div className="w-24 h-2 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-                      <div className="w-8 h-8 bg-[#f59e0b] rounded-full"></div>
-                    </div>
+                    <button
+                      onClick={() => fetchOpportunities()}
+                      className="cursor-pointer text-[#0176d3] hover:text-[#0176d3] transition-all duration-150"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 ${
+                          opportunitiesLoading ? "animate-spin" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -956,514 +1184,21 @@ export default function SalesforceDashboard() {
       </div>
 
       {/* New Lead Modal */}
-      {isNewLeadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop with blur */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            onClick={handleLeadClose}
-          ></div>
-
-          {/* Modal Container */}
-          <div className="relative z-10 w-full max-w-2xl mx-4">
-            {/* Close Button - Outside modal, top right */}
-            <button
-              onClick={handleLeadClose}
-              className="absolute -top-10 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-150 shadow-lg"
-            >
-              <X className="w-5 h-5 text-[#706e6b]" />
-            </button>
-
-            {/* Modal Content */}
-            <div className="bg-white rounded-lg shadow-2xl max-h-[80vh] flex flex-col">
-              <div className="px-6 py-4 border-b border-[#dddbda] flex items-center justify-between">
-                <h2 className="text-xl font-normal text-[#181818] flex-1 text-center">
-                  New Lead
-                </h2>
-                <p className="text-xs text-[#706e6b]">
-                  * = Required Information
-                </p>
-              </div>
-
-              {/* Modal Body - Scrollable */}
-              <div className="overflow-y-auto px-6 py-4 space-y-6">
-                {/* About Section */}
-                <div>
-                  <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
-                    About
-                  </h3>
-
-                  {/* Name */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Name
-                      </label>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs text-[#706e6b] mb-1">
-                            Salutation
-                          </label>
-                          <select
-                            value={leadFormData.salutation}
-                            onChange={(e) =>
-                              setLeadFormData({
-                                ...leadFormData,
-                                salutation: e.target.value,
-                              })
-                            }
-                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                          >
-                            <option value="">--None--</option>
-                            <option value="Mr.">Mr.</option>
-                            <option value="Ms.">Ms.</option>
-                            <option value="Mrs.">Mrs.</option>
-                            <option value="Dr.">Dr.</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#706e6b] mb-1">
-                            <span className="text-red-600">*</span> First Name
-                          </label>
-                          <div className="relative">
-                            <Input
-                              placeholder="First Name"
-                              value={leadFormData.firstName}
-                              onChange={(e) => {
-                                setLeadFormData({
-                                  ...leadFormData,
-                                  firstName: e.target.value,
-                                });
-                                if (leadErrors.firstName) {
-                                  setLeadErrors({
-                                    ...leadErrors,
-                                    firstName: false,
-                                  });
-                                }
-                              }}
-                              className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                                leadErrors.firstName
-                                  ? "border-2 border-red-600 pr-10"
-                                  : "border border-[#dddbda]"
-                              }`}
-                            />
-                            {leadErrors.firstName && (
-                              <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                            )}
-                          </div>
-                          {leadErrors.firstName && (
-                            <p className="text-red-600 text-xs mt-1">
-                              Complete this field.
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#706e6b] mb-1">
-                            <span className="text-red-600">*</span> Last Name
-                          </label>
-                          <div className="relative">
-                            <Input
-                              placeholder="Last Name"
-                              value={leadFormData.lastName}
-                              onChange={(e) => {
-                                setLeadFormData({
-                                  ...leadFormData,
-                                  lastName: e.target.value,
-                                });
-                                if (leadErrors.lastName) {
-                                  setLeadErrors({
-                                    ...leadErrors,
-                                    lastName: false,
-                                  });
-                                }
-                              }}
-                              className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                                leadErrors.lastName
-                                  ? "border-2 border-red-600 pr-10"
-                                  : "border border-[#dddbda]"
-                              }`}
-                            />
-                            {leadErrors.lastName && (
-                              <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                            )}
-                          </div>
-                          {leadErrors.lastName && (
-                            <p className="text-red-600 text-xs mt-1">
-                              Complete this field.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Company
-                      </label>
-                      <Input
-                        value={leadFormData.company}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            company: e.target.value,
-                          })
-                        }
-                        className="w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda]"
-                      />
-                    </div>
-
-                    {/* Title */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Title
-                      </label>
-                      <Input
-                        value={leadFormData.title}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            title: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    {/* Website */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Website
-                      </label>
-                      <Input
-                        value={leadFormData.website}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            website: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        value={leadFormData.description}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            description: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-20"
-                        style={{
-                          fontFamily:
-                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        }}
-                      />
-                    </div>
-
-                    <div className="pt-2">
-                      <label className="block text-sm text-[#181818] mb-2">
-                        Lead Owner
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-[#706e6b] rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-sm text-[#181818]">
-                          Rishab Nagwani
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Get in Touch Section */}
-                <div>
-                  <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
-                    Get in Touch
-                  </h3>
-                  <div className="space-y-4">
-                    {/* Phone */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Phone
-                      </label>
-                      <Input
-                        value={leadFormData.phone}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Email
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type="email"
-                          value={leadFormData.email}
-                          onChange={(e) => {
-                            setLeadFormData({
-                              ...leadFormData,
-                              email: e.target.value,
-                            });
-                            if (leadErrors.email) {
-                              setLeadErrors({ ...leadErrors, email: false });
-                            }
-                          }}
-                          className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                            leadErrors.email
-                              ? "border-2 border-red-600 pr-10"
-                              : "border border-[#dddbda]"
-                          }`}
-                        />
-                        {leadErrors.email && (
-                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                        )}
-                      </div>
-                      {leadErrors.email && (
-                        <p className="text-red-600 text-xs mt-1">
-                          Complete this field.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-2">
-                        Address
-                      </label>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs text-[#706e6b] mb-1">
-                            Country
-                          </label>
-                          <select
-                            value={leadFormData.country}
-                            onChange={(e) =>
-                              setLeadFormData({
-                                ...leadFormData,
-                                country: e.target.value,
-                              })
-                            }
-                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                          >
-                            <option value="">--None--</option>
-                            <option value="United States">United States</option>
-                            <option value="Canada">Canada</option>
-                            <option value="United Kingdom">
-                              United Kingdom
-                            </option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#706e6b] mb-1">
-                            Street
-                          </label>
-                          <textarea
-                            value={leadFormData.street}
-                            onChange={(e) =>
-                              setLeadFormData({
-                                ...leadFormData,
-                                street: e.target.value,
-                              })
-                            }
-                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-[60px]"
-                            style={{
-                              fontFamily:
-                                'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#706e6b] mb-1">
-                            City
-                          </label>
-                          <Input
-                            value={leadFormData.city}
-                            onChange={(e) =>
-                              setLeadFormData({
-                                ...leadFormData,
-                                city: e.target.value,
-                              })
-                            }
-                            className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-[#706e6b] mb-1">
-                              Zip/Postal Code
-                            </label>
-                            <Input
-                              value={leadFormData.zipPostalCode}
-                              onChange={(e) =>
-                                setLeadFormData({
-                                  ...leadFormData,
-                                  zipPostalCode: e.target.value,
-                                })
-                              }
-                              className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#706e6b] mb-1">
-                              State/Province
-                            </label>
-                            <select
-                              value={leadFormData.stateProvince}
-                              onChange={(e) =>
-                                setLeadFormData({
-                                  ...leadFormData,
-                                  stateProvince: e.target.value,
-                                })
-                              }
-                              className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                            >
-                              <option value="">--None--</option>
-                              <option value="California">California</option>
-                              <option value="New York">New York</option>
-                              <option value="Texas">Texas</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Segment Section */}
-                <div>
-                  <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
-                    Segment
-                  </h3>
-                  <div className="space-y-4">
-                    {/* No. of Employees */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        No. of Employees
-                      </label>
-                      <Input
-                        type="number"
-                        value={leadFormData.numberOfEmployees}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            numberOfEmployees: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    {/* Annual Revenue */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Annual Revenue
-                      </label>
-                      <Input
-                        type="number"
-                        value={leadFormData.annualRevenue}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            annualRevenue: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    {/* Lead Source */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Lead Source
-                      </label>
-                      <select
-                        value={leadFormData.leadSource}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            leadSource: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      >
-                        <option value="">--None--</option>
-                        <option value="Web">Web</option>
-                        <option value="Phone Inquiry">Phone Inquiry</option>
-                        <option value="Partner Referral">
-                          Partner Referral
-                        </option>
-                      </select>
-                    </div>
-
-                    {/* Industry */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Industry
-                      </label>
-                      <select
-                        value={leadFormData.industry}
-                        onChange={(e) =>
-                          setLeadFormData({
-                            ...leadFormData,
-                            industry: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      >
-                        <option value="">--None--</option>
-                        <option value="Technology">Technology</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Healthcare">Healthcare</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[#dddbda] flex items-center justify-end gap-3">
-              <Button
-                onClick={handleLeadClose}
-                className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleLeadSaveAndNew}
-                className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
-              >
-                Save & New
-              </Button>
-              <Button
-                onClick={handleLeadSave}
-                className="bg-[#0176d3] text-white hover:bg-[#0159a8] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 h-9 px-4 text-sm rounded"
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LeadFormModal
+        isEditMode={false}
+        isOpen={isNewLeadModalOpen}
+        onClose={handleLeadClose}
+        onSave={handleLeadSave}
+        onSaveAndNew={handleLeadSaveAndNew}
+        leadFormData={leadFormData}
+        setLeadFormData={setLeadFormData}
+        leadErrors={leadErrors}
+        setLeadErrors={setLeadErrors}
+      />
 
       {/* New Contact Modal */}
       <ContactFormModal
+        isEditMode={false}
         isOpen={isNewContactModalOpen}
         onClose={handleContactClose}
         onSave={handleContactSave}
@@ -1475,366 +1210,17 @@ export default function SalesforceDashboard() {
       />
 
       {/* New Opportunity Modal */}
-      {isNewOpportunityModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop with blur */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            onClick={handleOpportunityClose}
-          ></div>
-
-          {/* Modal Container */}
-          <div className="relative z-10 w-full max-w-2xl mx-4">
-            {/* Close Button - Outside modal, top right */}
-            <button
-              onClick={handleOpportunityClose}
-              className="absolute -top-10 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-all duration-150 shadow-lg"
-            >
-              <X className="w-5 h-5 text-[#706e6b]" />
-            </button>
-
-            {/* Modal Content */}
-            <div className="bg-white rounded-lg shadow-2xl max-h-[80vh] flex flex-col">
-              <div className="px-6 py-4 border-b border-[#dddbda] flex items-center justify-between">
-                <h2 className="text-xl font-normal text-[#181818] flex-1 text-center">
-                  New Opportunity
-                </h2>
-                <p className="text-xs text-[#706e6b]">
-                  * = Required Information
-                </p>
-              </div>
-
-              {/* Modal Body - Scrollable */}
-              <div className="overflow-y-auto px-6 py-4 space-y-6">
-                {/* About Section */}
-                <div>
-                  <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
-                    About
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Opportunity Name
-                      </label>
-                      <div className="relative">
-                        <Input
-                          value={opportunityFormData.opportunityName}
-                          onChange={(e) => {
-                            setOpportunityFormData({
-                              ...opportunityFormData,
-                              opportunityName: e.target.value,
-                            });
-                            if (opportunityErrors.opportunityName) {
-                              setOpportunityErrors({
-                                ...opportunityErrors,
-                                opportunityName: false,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                            opportunityErrors.opportunityName
-                              ? "border-2 border-red-600 pr-10"
-                              : "border border-[#dddbda]"
-                          }`}
-                        />
-                        {opportunityErrors.opportunityName && (
-                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                        )}
-                      </div>
-                      {opportunityErrors.opportunityName && (
-                        <p className="text-red-600 text-xs mt-1">
-                          Complete this field.
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Account Name
-                      </label>
-                      <div className="relative">
-                        <Input
-                          placeholder="Search Accounts..."
-                          value={opportunityFormData.accountName}
-                          onChange={(e) => {
-                            setOpportunityFormData({
-                              ...opportunityFormData,
-                              accountName: e.target.value,
-                            });
-                            if (opportunityErrors.accountName) {
-                              setOpportunityErrors({
-                                ...opportunityErrors,
-                                accountName: false,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded px-3 py-2 pr-10 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                            opportunityErrors.accountName
-                              ? "border-2 border-red-600"
-                              : "border border-[#dddbda]"
-                          }`}
-                        />
-                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#706e6b]" />
-                      </div>
-                      {opportunityErrors.accountName && (
-                        <p className="text-red-600 text-xs mt-1">
-                          Complete this field.
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Close Date
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type="date"
-                          value={opportunityFormData.closeDate}
-                          onChange={(e) => {
-                            setOpportunityFormData({
-                              ...opportunityFormData,
-                              closeDate: e.target.value,
-                            });
-                            if (opportunityErrors.closeDate) {
-                              setOpportunityErrors({
-                                ...opportunityErrors,
-                                closeDate: false,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded px-3 py-2 pr-10 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                            opportunityErrors.closeDate
-                              ? "border-2 border-red-600"
-                              : "border border-[#dddbda]"
-                          }`}
-                        />
-                        <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0176d3] pointer-events-none" />
-                      </div>
-                      {opportunityErrors.closeDate && (
-                        <p className="text-red-600 text-xs mt-1">
-                          Complete this field.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Amount */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Amount
-                      </label>
-                      <Input
-                        type="number"
-                        value={opportunityFormData.amount}
-                        onChange={(e) =>
-                          setOpportunityFormData({
-                            ...opportunityFormData,
-                            amount: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        value={opportunityFormData.description}
-                        onChange={(e) =>
-                          setOpportunityFormData({
-                            ...opportunityFormData,
-                            description: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-h-20"
-                        style={{
-                          fontFamily:
-                            'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        }}
-                      />
-                    </div>
-
-                    <div className="pt-2">
-                      <label className="block text-sm text-[#181818] mb-2">
-                        Opportunity Owner
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-[#706e6b] rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-sm text-[#181818]">
-                          Rishab Nagwani
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Section */}
-                <div>
-                  <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4">
-                    Status
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Stage
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={opportunityFormData.stage}
-                          onChange={(e) => {
-                            setOpportunityFormData({
-                              ...opportunityFormData,
-                              stage: e.target.value,
-                            });
-                            if (opportunityErrors.stage) {
-                              setOpportunityErrors({
-                                ...opportunityErrors,
-                                stage: false,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                            opportunityErrors.stage
-                              ? "border-2 border-red-600 pr-10"
-                              : "border border-[#dddbda]"
-                          }`}
-                        >
-                          <option>--None--</option>
-                          <option>Prospecting</option>
-                          <option>Qualification</option>
-                          <option>Needs Analysis</option>
-                          <option>Value Proposition</option>
-                          <option>Proposal/Price Quote</option>
-                          <option>Negotiation/Review</option>
-                          <option>Closed Won</option>
-                          <option>Closed Lost</option>
-                        </select>
-                        {opportunityErrors.stage && (
-                          <AlertCircle className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                        )}
-                      </div>
-                      {opportunityErrors.stage && (
-                        <p className="text-red-600 text-xs mt-1">
-                          Complete this field.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Probability (%) */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Probability (%)
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={opportunityFormData.probability}
-                        onChange={(e) =>
-                          setOpportunityFormData({
-                            ...opportunityFormData,
-                            probability: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        <span className="text-red-600">*</span> Forecast
-                        Category
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={opportunityFormData.forecastCategory}
-                          onChange={(e) => {
-                            setOpportunityFormData({
-                              ...opportunityFormData,
-                              forecastCategory: e.target.value,
-                            });
-                            if (opportunityErrors.forecastCategory) {
-                              setOpportunityErrors({
-                                ...opportunityErrors,
-                                forecastCategory: false,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded px-3 py-2 text-sm text-[#181818] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${
-                            opportunityErrors.forecastCategory
-                              ? "border-2 border-red-600 pr-10"
-                              : "border border-[#dddbda]"
-                          }`}
-                        >
-                          <option>--None--</option>
-                          <option>Pipeline</option>
-                          <option>Best Case</option>
-                          <option>Commit</option>
-                          <option>Omitted</option>
-                          <option>Closed</option>
-                        </select>
-                        {opportunityErrors.forecastCategory && (
-                          <AlertCircle className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
-                        )}
-                      </div>
-                      {opportunityErrors.forecastCategory && (
-                        <p className="text-red-600 text-xs mt-1">
-                          Complete this field.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Next Step */}
-                    <div>
-                      <label className="block text-sm text-[#181818] mb-1">
-                        Next Step
-                      </label>
-                      <Input
-                        value={opportunityFormData.nextStep}
-                        onChange={(e) =>
-                          setOpportunityFormData({
-                            ...opportunityFormData,
-                            nextStep: e.target.value,
-                          })
-                        }
-                        className="w-full border border-[#dddbda] rounded px-3 py-2 text-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-[#dddbda] flex items-center justify-end gap-3">
-                <Button
-                  onClick={handleOpportunityClose}
-                  className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleOpportunitySaveAndNew}
-                  className="bg-white text-[#0176d3] hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border border-[#dddbda] h-9 px-4 text-sm rounded"
-                >
-                  Save & New
-                </Button>
-                <Button
-                  onClick={handleOpportunitySave}
-                  className="bg-[#0176d3] text-white hover:bg-[#0159a8] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 h-9 px-4 text-sm rounded"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <OpportunityFormModal
+        isEditMode={false}
+        isOpen={isNewOpportunityModalOpen}
+        onClose={handleOpportunityClose}
+        onSave={handleOpportunitySave}
+        onSaveAndNew={handleOpportunitySaveAndNew}
+        opportunityFormData={opportunityFormData}
+        setOpportunityFormData={setOpportunityFormData}
+        opportunityErrors={opportunityErrors}
+        setOpportunityErrors={setOpportunityErrors}
+      />
     </div>
   );
 }
