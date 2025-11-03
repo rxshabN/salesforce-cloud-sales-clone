@@ -271,12 +271,12 @@ export default function ConvertLeadModal({
             if (newAccountId) {
               router.push(`/accounts/${newAccountId}`);
             } else {
-              router.push("/sales"); // Fallback
+              router.refresh();
             }
           },
         });
         onOpenChange(false);
-        router.refresh(); // [MODIFIED] Refresh the current page data (e.g., the sales page)
+        router.refresh(); // Refresh the page to update the leads list
       }
     } catch (error: any) {
       console.error("Error converting lead:", error);

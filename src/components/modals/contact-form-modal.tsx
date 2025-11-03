@@ -348,7 +348,7 @@ export default function ContactFormModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="overflow-y-auto min-w-4xl max-h-[90vh] flex flex-col p-0 rounded-t-3xl rounded-b-none" // Updated
+        className="min-w-4xl max-h-[90vh] flex flex-col p-0 rounded-t-3xl rounded-b-none" // Updated
         showCloseButton={false} // Updated
       >
         {/* Added Custom Close Button */}

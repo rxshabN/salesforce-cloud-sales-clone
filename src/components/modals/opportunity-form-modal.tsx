@@ -118,7 +118,7 @@ export default function OpportunityFormModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="overflow-y-auto min-w-4xl max-h-[90vh] flex flex-col p-0 rounded-t-3xl rounded-b-none"
+        className="min-w-4xl max-h-[90vh] flex flex-col p-0 rounded-t-3xl rounded-b-none"
         showCloseButton={false}
       >
         <button
@@ -181,7 +181,6 @@ export default function OpportunityFormModal({
                   )}
                 </div>
                 <div>
-                  {/* [REMOVED] todo: implement account search... */}
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Account Name
                   </Label>

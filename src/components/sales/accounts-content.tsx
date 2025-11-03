@@ -21,7 +21,9 @@ import {
   GroupedIconButtons,
 } from "@/components/ui/button-group";
 import RowActionsDropdown from "@/components/ui/row-actions-dropdown";
-import AccountFormModal from "@/components/modals/account-form-modal";
+import AccountFormModal, {
+  AccountFormData,
+} from "@/components/modals/account-form-modal";
 import DeleteAccountModal from "@/components/modals/delete-account-modal";
 import Link from "next/link";
 import axios from "axios";
@@ -47,12 +49,13 @@ interface Account {
   shippingStateProvince?: string;
 }
 
-const initialAccountFormData = {
+const initialAccountFormData: AccountFormData = {
   name: "",
   website: "",
   type: "",
   description: "",
   parentAccount: "",
+  parentAccountId: null,
   phone: "",
   billingCountry: "",
   billingStreet: "",
@@ -81,7 +84,7 @@ export default function AccountsContent() {
   );
   const [deletingAccountName, setDeletingAccountName] = useState("");
 
-  const [accountFormData, setAccountFormData] = useState(
+  const [accountFormData, setAccountFormData] = useState<AccountFormData>(
     initialAccountFormData
   );
   const [accountErrors, setAccountErrors] = useState<Record<string, boolean>>(
@@ -244,7 +247,7 @@ export default function AccountsContent() {
         website: accountFormData.website || null,
         type: accountFormData.type || null,
         description: accountFormData.description || null,
-        parent_account_id: null,
+        parent_account_id: accountFormData.parentAccountId || null,
         account_owner: "Rishab Nagwani",
         phone: accountFormData.phone || null,
         billing_street: accountFormData.billingStreet || null,
@@ -306,7 +309,7 @@ export default function AccountsContent() {
         website: accountFormData.website || null,
         type: accountFormData.type || null,
         description: accountFormData.description || null,
-        parent_account_id: null,
+        parent_account_id: accountFormData.parentAccountId || null,
         account_owner: "Rishab Nagwani",
         phone: accountFormData.phone || null,
         billing_street: accountFormData.billingStreet || null,
@@ -353,13 +356,24 @@ export default function AccountsContent() {
         `/api/v1/sobjects/accounts/${account.id}`
       );
       const accountData = response.data;
-
+      let parentAccountName = "";
+      if (accountData.parent_account_id) {
+        try {
+          const parentAcc = await axios.get(
+            `/api/v1/sobjects/accounts/${accountData.parent_account_id}`
+          );
+          parentAccountName = parentAcc.data.name;
+        } catch (e) {
+          console.error("Could not fetch parent account name", e);
+        }
+      }
       setAccountFormData({
         name: accountData.name || "",
         website: accountData.website || "",
         type: accountData.type || "",
         description: accountData.description || "",
-        parentAccount: "",
+        parentAccount: parentAccountName, // [MODIFIED]
+        parentAccountId: accountData.parent_account_id || null, // [MODIFIED]
         phone: accountData.phone || "",
         billingCountry: accountData.billing_country || "",
         billingStreet: accountData.billing_street || "",
