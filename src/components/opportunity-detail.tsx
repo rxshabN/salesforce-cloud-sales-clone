@@ -75,7 +75,6 @@ export default function OpportunityDetail({
     return stages.indexOf(opportunity.stage);
   };
 
-  // Add this function to handle mark stage as complete
   const handleMarkStageComplete = async () => {
     if (!opportunity) return;
 
@@ -108,10 +107,8 @@ export default function OpportunityDetail({
     }
   };
 
-  // Form state for inline editing
   const [editFormData, setEditFormData] = useState<any>({});
 
-  // Fetch opportunity data
   const fetchOpportunity = async () => {
     try {
       setLoading(true);
@@ -144,7 +141,6 @@ export default function OpportunityDetail({
     fetchOpportunity();
   }, [opportunityId]);
 
-  // Handle inline edit save
   const handleInlineSave = async () => {
     try {
       const dataToSave = {
@@ -174,7 +170,6 @@ export default function OpportunityDetail({
     }
   };
 
-  // Handle delete
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this opportunity?")) return;
 
@@ -194,7 +189,6 @@ export default function OpportunityDetail({
     }
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -208,14 +202,12 @@ export default function OpportunityDetail({
     });
   };
 
-  // Format close date (just date, no time)
   const formatCloseDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB");
   };
 
-  // Format amount
   const formatAmount = (amount: number | string) => {
     if (!amount) return "-";
     return `₹${Number(amount).toLocaleString("en-IN", {
@@ -242,13 +234,12 @@ export default function OpportunityDetail({
 
   return (
     <div className="overflow-y-auto h-full flex flex-col bg-[#f3f2f2]">
-      {/* Fixed Header with Tabs */}
+      
       <div className="fixed bg-white border-b border-gray-200 px-8 py-4 shrink-0 w-full">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-normal text-[#080707]">Sales</h1>
 
-            {/* Tab Navigation */}
             <div className="flex items-center gap-6">
               {tabs.map((tab) => (
                 <button
@@ -275,7 +266,6 @@ export default function OpportunityDetail({
         </div>
       </div>
 
-      {/* Opportunity Header */}
       <div className="bg-transparent px-6 py-4 mt-20">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -370,7 +360,6 @@ export default function OpportunityDetail({
           </div>
         </div>
 
-        {/* Sales Stage Path */}
         <div className="bg-white rounded-2xl p-2 mb-4 flex items-center justify-between">
           <div className="flex items-center">
             {stages.map((stage, index) => {
@@ -423,7 +412,6 @@ export default function OpportunityDetail({
             })}
           </div>
 
-          {/* Mark Stage as Complete Button */}
           {getCurrentStageIndex() < stages.length - 1 && (
             <div className="ml-6">
               <Button
@@ -437,7 +425,6 @@ export default function OpportunityDetail({
           )}
         </div>
 
-        {/* Guidance for Success */}
         <div className="bg-white rounded-2xl p-4">
           <button
             onClick={() => setIsGuidanceExpanded(!isGuidanceExpanded)}
@@ -478,10 +465,9 @@ export default function OpportunityDetail({
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1">
         <div className="grid grid-cols-[380px_1fr_380px] gap-4 p-3">
-          {/* Left Column */}
+          
           <div className="bg-white border-r border-[#dddbda] p-2 space-y-6 rounded-2xl">
             {isInlineEditing ? (
               <div className="flex-1 bg-white py-2 px-4">
@@ -489,7 +475,7 @@ export default function OpportunityDetail({
                   Edit Opportunity Information
                 </h2>
                 <div className="max-w-4xl space-y-6 px-3">
-                  {/* About Section */}
+                  
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       About
@@ -561,7 +547,6 @@ export default function OpportunityDetail({
                     </div>
                   </div>
 
-                  {/* Status Section */}
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       Status
@@ -647,7 +632,6 @@ export default function OpportunityDetail({
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
@@ -666,7 +650,7 @@ export default function OpportunityDetail({
               </div>
             ) : (
               <>
-                {/* Top Summary */}
+                
                 <div className="space-y-3 pb-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -721,7 +705,6 @@ export default function OpportunityDetail({
                   </div>
                 </div>
 
-                {/* Status Section */}
                 <div>
                   <button
                     onClick={() => setIsStatusExpanded(!isStatusExpanded)}
@@ -812,7 +795,6 @@ export default function OpportunityDetail({
                   )}
                 </div>
 
-                {/* About Section */}
                 <div>
                   <button
                     onClick={() => setIsAboutExpanded(!isAboutExpanded)}
@@ -910,7 +892,6 @@ export default function OpportunityDetail({
                   )}
                 </div>
 
-                {/* History Section */}
                 <div>
                   <button
                     onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
@@ -972,9 +953,8 @@ export default function OpportunityDetail({
             )}
           </div>
 
-          {/* Middle Column - Activity Timeline */}
           <div className="bg-white p-6 rounded-2xl">
-            {/* Action Buttons */}
+            
             <div className="flex items-center gap-2 mb-6">
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Mail className="w-5 h-5 text-[#706e6b]" />
@@ -990,7 +970,6 @@ export default function OpportunityDetail({
               </button>
             </div>
 
-            {/* Filters */}
             <div className="bg-white rounded p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-[#706e6b]">
@@ -1011,7 +990,6 @@ export default function OpportunityDetail({
               </div>
             </div>
 
-            {/* Upcoming & Overdue */}
             <div className="bg-white rounded mb-4">
               <button
                 onClick={() => setIsUpcomingExpanded(!isUpcomingExpanded)}
@@ -1041,7 +1019,6 @@ export default function OpportunityDetail({
               )}
             </div>
 
-            {/* Show All Activities Button */}
             <div className="text-center">
               <Button className="bg-[#066afe] rounded-3xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
@@ -1049,13 +1026,11 @@ export default function OpportunityDetail({
             </div>
           </div>
 
-          {/* Right Column - Related Lists */}
           <div className="bg-white rounded-2xl border-l border-[#dddbda] p-6">
             <h2 className="text-lg font-normal text-[#181818] mb-6">
               Collaboration & Files
             </h2>
 
-            {/* Slack Channel */}
             <div className="mb-6 border border-[#dddbda] rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6">
@@ -1079,7 +1054,6 @@ export default function OpportunityDetail({
               </Button>
             </div>
 
-            {/* Contact Roles */}
             <div className="mb-6">
               <div className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl">
                 <User className="w-4 h-4 text-[#9b59b6]" />
@@ -1094,7 +1068,6 @@ export default function OpportunityDetail({
               </div>
             </div>
 
-            {/* Files */}
             <div>
               <div className="bg-gray-100 flex items-center gap-2 w-full text-left mb-4 px-2 py-1 rounded-2xl">
                 <Upload className="w-4 h-4 text-[#706e6b]" />

@@ -72,9 +72,8 @@ export default function ConvertLeadModal({
 
   const [accountSearchQuery, setAccountSearchQuery] = useState("");
   const [contactSearchQuery, setContactSearchQuery] = useState("");
-  const [opportunitySearchQuery, setOpportunitySearchQuery] = useState(""); // [NEW]
+  const [opportunitySearchQuery, setOpportunitySearchQuery] = useState(""); 
 
-  // [NEW] Search Results States
   const [accountSearchResults, setAccountSearchResults] = useState<any[]>([]);
   const [isAccountLoading, setIsAccountLoading] = useState(false);
   const [contactSearchResults, setContactSearchResults] = useState<any[]>([]);
@@ -84,12 +83,10 @@ export default function ConvertLeadModal({
   >([]);
   const [isOpportunityLoading, setIsOpportunityLoading] = useState(false);
 
-  // [NEW] Debounced Search Values
   const debouncedAccountSearch = useDebounce(accountSearchQuery, 300);
   const debouncedContactSearch = useDebounce(contactSearchQuery, 300);
   const debouncedOpportunitySearch = useDebounce(opportunitySearchQuery, 300);
 
-  // [NEW] Selected existing records
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
     null
   );
@@ -100,14 +97,13 @@ export default function ConvertLeadModal({
     number | null
   >(null);
 
-  // [NEW] Option Change Handlers (to reset search)
   const handleAccountOptionChange = (value: "new" | "existing") => {
     setAccountOption(value);
     setSelectedAccountId(null);
-    setAccountSearchQuery(value === "new" ? leadData.company : ""); // Reset or set to default
-    setAccountName(value === "new" ? leadData.company : ""); // Reset account name
+    setAccountSearchQuery(value === "new" ? leadData.company : ""); 
+    setAccountName(value === "new" ? leadData.company : ""); 
     setAccountSearchResults([]);
-    // If switching to 'new', also disable opportunity search
+    
     if (value === "new") {
       handleOpportunityOptionChange("new");
     }
@@ -127,7 +123,6 @@ export default function ConvertLeadModal({
     setOpportunitySearchResults([]);
   };
 
-  // [NEW] Effect for Account Search
   useEffect(() => {
     if (debouncedAccountSearch && accountOption === "existing") {
       setIsAccountLoading(true);
@@ -149,7 +144,6 @@ export default function ConvertLeadModal({
     }
   }, [debouncedAccountSearch, accountOption]);
 
-  // [NEW] Effect for Contact Search
   useEffect(() => {
     if (debouncedContactSearch && contactOption === "existing") {
       setIsContactLoading(true);
@@ -174,7 +168,6 @@ export default function ConvertLeadModal({
     }
   }, [debouncedContactSearch, contactOption]);
 
-  // [NEW] Effect for Opportunity Search (only if an account is selected)
   useEffect(() => {
     if (
       debouncedOpportunitySearch &&
@@ -189,7 +182,7 @@ export default function ConvertLeadModal({
           )}`
         )
         .then((res) => {
-          // Filter ops by selected account
+          
           const accountOps = res.data.filter(
             (op: any) => op.account_id === selectedAccountId
           );
@@ -204,11 +197,9 @@ export default function ConvertLeadModal({
     }
   }, [debouncedOpportunitySearch, opportunityOption, selectedAccountId]);
 
-  // [MODIFIED] handleConvert now sends the full payload
   const handleConvert = async () => {
     setIsConverting(true);
 
-    // Validation
     if (accountOption === "new" && !accountName.trim()) {
       showToast("Account Name is required.", {
         label: "Dismiss",
@@ -241,7 +232,7 @@ export default function ConvertLeadModal({
     try {
       const payload = {
         leadId: leadId,
-        convertedStatus: convertedStatus, // This status is used by the backend to update the lead
+        convertedStatus: convertedStatus, 
         dontCreateOpportunity: dontCreateOpportunity,
 
         accountId: accountOption === "existing" ? selectedAccountId : null,
@@ -266,7 +257,7 @@ export default function ConvertLeadModal({
         showToast("Lead converted successfully.", {
           label: "View Records",
           onClick: () => {
-            // After conversion, redirect to the new/existing Account page
+            
             const newAccountId = response.data?.account?.id;
             if (newAccountId) {
               router.push(`/accounts/${newAccountId}`);
@@ -276,7 +267,7 @@ export default function ConvertLeadModal({
           },
         });
         onOpenChange(false);
-        router.refresh(); // Refresh the page to update the leads list
+        router.refresh(); 
       }
     } catch (error: any) {
       console.error("Error converting lead:", error);
@@ -297,7 +288,7 @@ export default function ConvertLeadModal({
         className="min-w-4xl max-h-[90vh] flex flex-col p-0 rounded-t-3xl rounded-b-none"
         showCloseButton={false}
       >
-        {/* Custom Close Button */}
+        
         <button
           onClick={() => onOpenChange(false)}
           className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white border-2 border-[#0176d3] flex items-center justify-center hover:bg-gray-50 transition-colors z-20"
@@ -312,7 +303,6 @@ export default function ConvertLeadModal({
             </DialogTitle>
           </DialogHeader>
 
-          {/* Required Info text */}
           <div className="px-6 text-right">
             <p className="text-xs text-[#000000]">
               <span className="text-red-500">*</span> = Required Information
@@ -320,7 +310,7 @@ export default function ConvertLeadModal({
           </div>
 
           <div className="px-0.5 py-4 space-y-4">
-            {/* Account Section */}
+            
             <Collapsible
               open={isAccountExpanded}
               onOpenChange={setIsAccountExpanded}
@@ -338,7 +328,7 @@ export default function ConvertLeadModal({
 
                 <CollapsibleContent>
                   <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-start">
-                    {/* Create New Account */}
+                    
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <RadioGroup
@@ -379,14 +369,12 @@ export default function ConvertLeadModal({
                       )}
                     </div>
 
-                    {/* OR Separator */}
                     <div className="flex items-center justify-center pt-8">
                       <span className="text-sm font-semibold text-[#706e6b]">
                         - OR -
                       </span>
                     </div>
 
-                    {/* Choose Existing Account */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <RadioGroup
@@ -457,7 +445,7 @@ export default function ConvertLeadModal({
             </Collapsible>
 
             <hr className="border-b border-gray-400 w-full" />
-            {/* Contact Section */}
+            
             <Collapsible
               open={isContactExpanded}
               onOpenChange={setIsContactExpanded}
@@ -475,7 +463,7 @@ export default function ConvertLeadModal({
 
                 <CollapsibleContent>
                   <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-start">
-                    {/* Create New Contact */}
+                    
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <RadioGroup
@@ -547,14 +535,12 @@ export default function ConvertLeadModal({
                       )}
                     </div>
 
-                    {/* OR Separator */}
                     <div className="flex items-center justify-center pt-8">
                       <span className="text-sm font-semibold text-[#706e6b]">
                         - OR -
                       </span>
                     </div>
 
-                    {/* Choose Existing Contact */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <RadioGroup
@@ -632,7 +618,6 @@ export default function ConvertLeadModal({
 
             <hr className="border-b border-gray-400 w-full" />
 
-            {/* Opportunity Section */}
             <Collapsible
               open={isOpportunityExpanded}
               onOpenChange={setIsOpportunityExpanded}
@@ -652,7 +637,7 @@ export default function ConvertLeadModal({
 
                 <CollapsibleContent>
                   <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-start">
-                    {/* Create New Opportunity */}
+                    
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <RadioGroup
@@ -722,14 +707,12 @@ export default function ConvertLeadModal({
                       </div>
                     </div>
 
-                    {/* OR Separator */}
                     <div className="flex items-center justify-center pt-8">
                       <span className="text-sm font-semibold text-[#706e6b]">
                         - OR -
                       </span>
                     </div>
 
-                    {/* Choose Existing Opportunity */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <RadioGroup
@@ -816,7 +799,6 @@ export default function ConvertLeadModal({
 
             <hr className="border-b border-gray-400 w-full" />
 
-            {/* Record Owner and Converted Status */}
             <div className="grid grid-cols-2 gap-6 pt-4 px-4">
               <div className="space-y-2">
                 <Label
@@ -847,7 +829,7 @@ export default function ConvertLeadModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Qualified">Qualified</SelectItem>
-                    {/* Add other valid *final* lead statuses here if needed */}
+                    
                     <SelectItem value="Converted">Converted</SelectItem>
                   </SelectContent>
                 </Select>
@@ -856,7 +838,6 @@ export default function ConvertLeadModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-400">
           <Button
             onClick={() => onOpenChange(false)}

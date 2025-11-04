@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react"; // [ADDED]
-import axios from "axios"; // [ADDED]
-import useDebounce from "@/hooks/use-debounce"; // [ADDED]
-import { SearchResultList } from "../search-result-list"; // [ADDED]
+import { useState, useEffect } from "react"; 
+import axios from "axios"; 
+import useDebounce from "@/hooks/use-debounce"; 
+import { SearchResultList } from "../search-result-list"; 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,14 +25,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { X, Ban, Search } from "lucide-react";
 import Image from "next/image";
 
-// [MODIFIED] Interface
 export interface AccountFormData {
   name: string;
   website: string;
   type: string;
   description: string;
   parentAccount: string;
-  parentAccountId: number | null; // [ADDED]
+  parentAccountId: number | null; 
   phone: string;
   billingCountry: string;
   billingStreet: string;
@@ -71,7 +70,7 @@ export default function AccountFormModal({
   setAccountErrors,
   isSaving,
 }: AccountFormModalProps) {
-  // [NEW] State for Parent Account Search
+  
   const [parentAccountSearchQuery, setParentAccountSearchQuery] = useState("");
   const [parentAccountSearchResults, setParentAccountSearchResults] = useState<
     any[]
@@ -294,7 +293,6 @@ export default function AccountFormModal({
     "Zimbabwe",
   ];
 
-  // [NEW] Effect for Parent Account Search
   useEffect(() => {
     if (
       debouncedParentAccountSearch &&
@@ -308,7 +306,7 @@ export default function AccountFormModal({
           )}`
         )
         .then((res) => {
-          // Exclude self from parent account search results
+          
           const results = res.data.filter(
             (acc: any) =>
               acc.name.toLowerCase() !== accountFormData.name.toLowerCase()
@@ -328,7 +326,6 @@ export default function AccountFormModal({
     accountFormData.name,
   ]);
 
-  // [NEW] Set search query when modal opens in edit mode
   useEffect(() => {
     if (isOpen) {
       setParentAccountSearchQuery(accountFormData.parentAccount);
@@ -367,7 +364,7 @@ export default function AccountFormModal({
                 About
               </h3>
               <div className="space-y-4">
-                {/* Account Name */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Account Name
@@ -404,7 +401,7 @@ export default function AccountFormModal({
                     </p>
                   )}
                 </div>
-                {/* Website */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Website
@@ -421,7 +418,7 @@ export default function AccountFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm"
                   />
                 </div>
-                {/* Type */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Type
@@ -447,7 +444,7 @@ export default function AccountFormModal({
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Description */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Description
@@ -464,9 +461,9 @@ export default function AccountFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm min-h-20"
                   />
                 </div>
-                {/* Parent Account */}
+                
                 <div>
-                  {/* [REMOVED] todo comment */}
+                  
                   <Label className="block text-sm text-[#181818] mb-1">
                     Parent Account
                   </Label>
@@ -476,19 +473,19 @@ export default function AccountFormModal({
                       placeholder="Search Accounts..."
                       value={accountFormData.parentAccount}
                       onChange={(e) => {
-                        // [MODIFIED]
+                        
                         setAccountFormData({
                           ...accountFormData,
                           parentAccount: e.target.value,
-                          parentAccountId: null, // Clear ID on manual change
+                          parentAccountId: null, 
                         });
-                        setParentAccountSearchQuery(e.target.value); // Trigger search
+                        setParentAccountSearchQuery(e.target.value); 
                       }}
                       className="w-full border border-[#000000] rounded px-3 py-2 text-sm pr-10"
                     />
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   </div>
-                  {/* [NEW] Parent Account Search Results */}
+                  
                   {parentAccountSearchQuery &&
                     parentAccountSearchQuery !==
                       accountFormData.parentAccount && (
@@ -500,7 +497,7 @@ export default function AccountFormModal({
                             setAccountFormData({
                               ...accountFormData,
                               parentAccount: item.name,
-                              parentAccountId: item.id, // Set the ID
+                              parentAccountId: item.id, 
                             });
                             setParentAccountSearchQuery("");
                             setParentAccountSearchResults([]);
@@ -510,7 +507,7 @@ export default function AccountFormModal({
                       </div>
                     )}
                 </div>
-                {/* Account Owner */}
+                
                 <div className="pt-2">
                   <Label className="block text-sm text-[#181818] mb-1">
                     Account Owner
@@ -529,13 +526,13 @@ export default function AccountFormModal({
                 </div>
               </div>
             </div>
-            {/* Get in Touch Section */}
+            
             <div>
               <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
                 Get in Touch
               </h3>
               <div className="space-y-4">
-                {/* Phone */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Phone
@@ -554,7 +551,7 @@ export default function AccountFormModal({
                 </div>
               </div>
             </div>
-            {/* Billing Address Section */}
+            
             <div>
               <h3 className="text-base font-normal text-black">
                 Billing Address
@@ -658,7 +655,7 @@ export default function AccountFormModal({
                 </div>
               </div>
             </div>
-            {/* Shipping Address Section */}
+            
             <div>
               <h3 className="text-base font-normal text-black">
                 Shipping Address

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react"; // [ADDED]
-import axios from "axios"; // [ADDED]
-import useDebounce from "@/hooks/use-debounce"; // [ADDED]
+import { useState, useEffect } from "react"; 
+import axios from "axios"; 
+import useDebounce from "@/hooks/use-debounce"; 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +62,7 @@ export default function OpportunityFormModal({
   setOpportunityErrors,
   isSaving,
 }: OpportunityFormModalProps) {
-  // [NEW] State for Account Search
+  
   const [accountSearchQuery, setAccountSearchQuery] = useState("");
   const [accountSearchResults, setAccountSearchResults] = useState<any[]>([]);
   const [isAccountLoading, setIsAccountLoading] = useState(false);
@@ -87,9 +87,8 @@ export default function OpportunityFormModal({
     "Closed",
   ];
 
-  // [NEW] Effect for Account Search
   useEffect(() => {
-    // Only search if the user is typing (query doesn't match the set account name)
+    
     if (
       debouncedAccountSearch &&
       debouncedAccountSearch !== opportunityFormData.accountName
@@ -109,7 +108,7 @@ export default function OpportunityFormModal({
         .catch((err) => console.error("Error searching accounts:", err))
         .finally(() => setIsAccountLoading(false));
     } else {
-      setAccountSearchResults([]); // Clear results if query is empty or matches
+      setAccountSearchResults([]); 
     }
   }, [debouncedAccountSearch, opportunityFormData.accountName]);
 
@@ -139,7 +138,7 @@ export default function OpportunityFormModal({
             </p>
           </div>
           <div className="px-10 py-4 space-y-6">
-            {/* About Section */}
+            
             <div>
               <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
                 About
@@ -192,12 +191,12 @@ export default function OpportunityFormModal({
                       placeholder="Search Accounts..."
                       value={opportunityFormData.accountName}
                       onChange={(e) => {
-                        // [MODIFIED]
+                        
                         setOpportunityFormData({
                           ...opportunityFormData,
                           accountName: e.target.value,
                         });
-                        setAccountSearchQuery(e.target.value); // Trigger search
+                        setAccountSearchQuery(e.target.value); 
                         if (opportunityErrors.accountName) {
                           setOpportunityErrors({
                             ...opportunityErrors,
@@ -218,7 +217,7 @@ export default function OpportunityFormModal({
                       Complete this field.
                     </p>
                   )}
-                  {/* [NEW] Account Search Results */}
+                  
                   {accountSearchQuery &&
                     accountSearchQuery !== opportunityFormData.accountName && (
                       <div className="mt-2">
@@ -275,7 +274,7 @@ export default function OpportunityFormModal({
                     </p>
                   )}
                 </div>
-                {/* Amount */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Amount
@@ -292,7 +291,7 @@ export default function OpportunityFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm"
                   />
                 </div>
-                {/* Description */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Description
@@ -326,7 +325,7 @@ export default function OpportunityFormModal({
                 </div>
               </div>
             </div>
-            {/* Status Section */}
+            
             <div>
               <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
                 Status
@@ -374,7 +373,7 @@ export default function OpportunityFormModal({
                     </p>
                   )}
                 </div>
-                {/* Probability (%) */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Probability (%)
@@ -435,7 +434,7 @@ export default function OpportunityFormModal({
                     </p>
                   )}
                 </div>
-                {/* Next Step */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Next Step

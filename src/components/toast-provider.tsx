@@ -34,7 +34,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = Math.random().toString(36).substring(7)
     setToasts((prev) => [...prev, { id, message, action }])
 
-    // Auto-dismiss after 5 seconds
     setTimeout(() => {
       hideToast(id)
     }, 5000)

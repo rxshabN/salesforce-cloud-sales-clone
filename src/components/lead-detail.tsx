@@ -60,10 +60,8 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isInlineEditing, setIsInlineEditing] = useState(false);
 
-  // Form state for inline editing
   const [editFormData, setEditFormData] = useState<any>({});
 
-  // Define lead status stages
   const statusStages = [
     "New",
     "Contacted",
@@ -72,7 +70,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
     "Converted",
   ];
 
-  // Fetch lead data
   const fetchLead = async () => {
     try {
       setLoading(true);
@@ -113,7 +110,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
     fetchLead();
   }, [leadId]);
 
-  // Mark status as complete (progress to next stage)
   const handleMarkStatusComplete = async () => {
     if (!lead) return;
 
@@ -149,7 +145,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
     }
   };
 
-  // Handle inline edit save
   const handleInlineSave = async () => {
     try {
       await axios.patch(`/api/v1/sobjects/leads/${leadId}`, editFormData);
@@ -168,13 +163,11 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
     }
   };
 
-  // Get current status index
   const getCurrentStatusIndex = () => {
     if (!lead) return -1;
     return statusStages.indexOf(lead.status);
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -225,7 +218,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-normal text-[#080707]">Sales</h1>
 
-            {/* Tab Navigation */}
             <div className="flex items-center gap-6">
               {tabs.map((tab) => (
                 <button
@@ -251,7 +243,7 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
           </button>
         </div>
       </div>
-      {/* Lead Header */}
+      
       <div className="bg-transparent px-6 py-4 mt-20">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -344,7 +336,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
             })}
           </div>
 
-          {/* Mark Status as Complete Button */}
           <div className="ml-6">
             <Button
               onClick={handleMarkStatusComplete}
@@ -370,7 +361,7 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                   Edit Lead Information
                 </h2>
                 <div className="max-w-4xl space-y-6 px-3">
-                  {/* About Section */}
+                  
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       About
@@ -495,7 +486,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                     </div>
                   </div>
 
-                  {/* Get in Touch Section */}
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       Get in Touch
@@ -615,7 +605,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                     </div>
                   </div>
 
-                  {/* Segment Section */}
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       Segment
@@ -688,7 +677,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
@@ -916,7 +904,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                   )}
                 </div>
 
-                {/* Segment Section */}
                 <div>
                   <button
                     onClick={() => setIsSegmentExpanded(!isSegmentExpanded)}
@@ -1011,7 +998,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
                   )}
                 </div>
 
-                {/* History Section */}
                 <div>
                   <button
                     onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
@@ -1073,9 +1059,8 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
             )}
           </div>
 
-          {/* Middle Column - Activity Timeline */}
           <div className="bg-white p-6 rounded-2xl">
-            {/* Action Buttons */}
+            
             <div className="flex items-center gap-2 mb-6">
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Mail className="w-5 h-5 text-[#706e6b]" />
@@ -1091,7 +1076,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
               </button>
             </div>
 
-            {/* Filters */}
             <div className="bg-white rounded p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-[#706e6b]">
@@ -1112,7 +1096,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
               </div>
             </div>
 
-            {/* Upcoming & Overdue */}
             <div className="bg-white rounded mb-4">
               <button
                 onClick={() => setIsUpcomingExpanded(!isUpcomingExpanded)}
@@ -1142,7 +1125,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
               )}
             </div>
 
-            {/* Show All Activities Button */}
             <div className="text-center">
               <Button className="bg-[#066afe] rounded-3xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
@@ -1150,7 +1132,6 @@ export default function LeadDetail({ leadId }: LeadDetailProps) {
             </div>
           </div>
 
-          {/* Right Column - Notes */}
           <div className="bg-white rounded-2xl border-l border-[#dddbda] p-6">
             <h2 className="text-lg font-normal text-[#181818] mb-6">
               Notes & Attachments
