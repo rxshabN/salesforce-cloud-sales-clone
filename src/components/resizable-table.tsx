@@ -49,7 +49,6 @@ export default function ResizableTable({
     "asc" | "desc"
   >("asc");
 
-  // Use external sort state if provided, otherwise use internal
   const sortColumn =
     externalSortColumn !== undefined ? externalSortColumn : internalSortColumn;
   const sortDirection =
@@ -68,7 +67,7 @@ export default function ResizableTable({
   };
 
   const handleDoubleClick = (columnKey: string) => {
-    // Auto-fit: set to a reasonable default width
+    
     setColumnWidths((prev) => ({
       ...prev,
       [columnKey]: 200,
@@ -83,10 +82,10 @@ export default function ResizableTable({
       sortColumn === columnKey && sortDirection === "asc" ? "desc" : "asc";
 
     if (onSort) {
-      // If external sort handler provided, use it
+      
       onSort(columnKey, newDirection);
     } else {
-      // Otherwise use internal state
+      
       setInternalSortColumn(columnKey);
       setInternalSortDirection(newDirection);
     }
@@ -162,7 +161,7 @@ export default function ResizableTable({
                     onMouseEnter={() => setHoveredResizer(column.key)}
                     onMouseLeave={() => setHoveredResizer(null)}
                   >
-                    {/* Blue resize indicator line - more prominent when hovering or resizing */}
+                    
                     <div
                       className={`absolute right-0 top-0 h-full transition-all ${
                         hoveredResizer === column.key ||

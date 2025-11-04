@@ -98,7 +98,7 @@ export default function OpportunitiesContent() {
         opportunityName: opp.name,
         accountName: opp.accounts?.name || "N/A",
         stage: opp.stage,
-        closeDate: new Date(opp.close_date).toLocaleDateString("en-GB"), // dd/mm/yyyy
+        closeDate: new Date(opp.close_date).toLocaleDateString("en-GB"), 
         opportunityOwnerAlias: opp.opportunity_owner,
         amount: opp.amount ? `$${Number(opp.amount).toLocaleString()}` : "",
         description: opp.description,

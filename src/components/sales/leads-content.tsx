@@ -13,7 +13,7 @@ import {
   Filter,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image"; // [MODIFIED] Added Image
+import Image from "next/image"; 
 import ResizableTable from "@/components/resizable-table";
 import {
   ButtonGroup,
@@ -38,7 +38,6 @@ interface Lead {
   ownerAlias: string;
 }
 
-// [MODIFIED] Kept initialLeadFormData as-is, but fixed missing fields
 const initialLeadFormData: LeadFormData = {
   salutation: "",
   firstName: "",
@@ -58,28 +57,28 @@ const initialLeadFormData: LeadFormData = {
   annualRevenue: "",
   leadSource: "",
   industry: "",
-  status: "New", // Added status to match interface
+  status: "New", 
 };
 
 export default function LeadsContent() {
   const { showToast } = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true); // Delete Modal State
+  const [loading, setLoading] = useState(true); 
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingLeadId, setDeletingLeadId] = useState<number | null>(null);
-  const [deletingLeadName, setDeletingLeadName] = useState(""); // New/Edit Modal State
+  const [deletingLeadName, setDeletingLeadName] = useState(""); 
 
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingLeadId, setEditingLeadId] = useState<number | null>(null);
   const [leadFormData, setLeadFormData] = useState(initialLeadFormData);
   const [leadErrors, setLeadErrors] = useState<Record<string, boolean>>({});
-  const [isSaving, setIsSaving] = useState(false); // [MODIFIED] Added isSaving // Search/Sort State
+  const [isSaving, setIsSaving] = useState(false); 
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortColumn, setSortColumn] = useState<string | null>("name"); // [MODIFIED]
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); // [MODIFIED] // [MODIFIED] Updated columns array structure
+  const [sortColumn, setSortColumn] = useState<string | null>("name"); 
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); 
 
   const columns = [
     {
@@ -175,7 +174,7 @@ export default function LeadsContent() {
     { label: "Import" },
     { label: "Add to Campaign" },
     { label: "Send Email" },
-    { label: "Change Owner" }, // [MODIFIED] Removed hasDropdown
+    { label: "Change Owner" }, 
   ];
 
   const hasRecords = leads.length > 0;
@@ -221,7 +220,7 @@ export default function LeadsContent() {
     return () => {
       clearTimeout(handler);
     };
-  }, [searchQuery]); // [MODIFIED] Replaced filteredAndSortedLeads with new sorting logic
+  }, [searchQuery]); 
 
   const sortedLeads = [...leads].sort((a, b) => {
     if (!sortColumn) return 0;
@@ -257,7 +256,7 @@ export default function LeadsContent() {
     const errors: Record<string, boolean> = {};
     if (!leadFormData.firstName.trim()) errors.firstName = true;
     if (!leadFormData.lastName.trim()) errors.lastName = true;
-    if (!leadFormData.email.trim()) errors.email = true; // [MODIFIED] Added company and status validation
+    if (!leadFormData.email.trim()) errors.email = true; 
     if (!leadFormData.company.trim()) errors.company = true;
     if (!leadFormData.status.trim() || leadFormData.status === "--None--")
       errors.status = true;
@@ -291,7 +290,7 @@ export default function LeadsContent() {
         annualRevenue: leadData.annual_revenue || "",
         leadSource: leadData.lead_source || "",
         industry: leadData.industry || "",
-        status: leadData.status || "New", // [MODIFIED]
+        status: leadData.status || "New", 
       });
 
       setIsEditMode(true);
@@ -314,7 +313,7 @@ export default function LeadsContent() {
 
   const handleLeadSave = async () => {
     if (!validateLeadForm()) return;
-    setIsSaving(true); // [MODIFIED]
+    setIsSaving(true); 
 
     try {
       const leadData = {
@@ -322,7 +321,7 @@ export default function LeadsContent() {
         first_name: leadFormData.firstName,
         last_name: leadFormData.lastName,
         title: leadFormData.title || null,
-        company: leadFormData.company, // [MODIFIED] Not-nullable
+        company: leadFormData.company, 
         website: leadFormData.website || null,
         description: leadFormData.description || null,
         email: leadFormData.email,
@@ -339,11 +338,11 @@ export default function LeadsContent() {
         lead_source: leadFormData.leadSource || null,
         industry: leadFormData.industry || null,
         lead_owner: "Rishab Nagwani",
-        status: leadFormData.status, // [MODIFIED] Use dynamic status
+        status: leadFormData.status, 
       };
 
       if (isEditMode && editingLeadId) {
-        // Update existing lead
+        
         const response = await axios.patch(
           `/api/v1/sobjects/leads/${editingLeadId}`,
           leadData
@@ -361,7 +360,7 @@ export default function LeadsContent() {
           fetchLeads(searchQuery);
         }
       } else {
-        // Create new lead
+        
         const response = await axios.post("/api/v1/sobjects/leads", leadData);
         if (response.status === 201) {
           setIsNewLeadModalOpen(false);
@@ -390,13 +389,13 @@ export default function LeadsContent() {
         });
       }
     } finally {
-      setIsSaving(false); // [MODIFIED]
+      setIsSaving(false); 
     }
   };
 
   const handleLeadSaveAndNew = async () => {
     if (!validateLeadForm()) return;
-    setIsSaving(true); // [MODIFIED]
+    setIsSaving(true); 
 
     try {
       const leadData = {
@@ -404,7 +403,7 @@ export default function LeadsContent() {
         first_name: leadFormData.firstName,
         last_name: leadFormData.lastName,
         title: leadFormData.title || null,
-        company: leadFormData.company, // [MODIFIED] Not-nullable
+        company: leadFormData.company, 
         website: leadFormData.website || null,
         description: leadFormData.description || null,
         email: leadFormData.email,
@@ -421,7 +420,7 @@ export default function LeadsContent() {
         lead_source: leadFormData.leadSource || null,
         industry: leadFormData.industry || null,
         lead_owner: "Rishab Nagwani",
-        status: leadFormData.status, // [MODIFIED] Use dynamic status
+        status: leadFormData.status, 
       };
 
       const response = await axios.post("/api/v1/sobjects/leads", leadData);
@@ -451,7 +450,7 @@ export default function LeadsContent() {
         });
       }
     } finally {
-      setIsSaving(false); // [MODIFIED]
+      setIsSaving(false); 
     }
   };
 
@@ -479,12 +478,12 @@ export default function LeadsContent() {
 
   return (
     <div className="bg-[#f3f2f2]">
-      {/* [MODIFIED] List View Header styling */}
+      
       <div className="bg-transparent px-8 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Image
-              src="/leads-logo.png" // [MODIFIED] Assumed logo path
+              src="/leads-logo.png" 
               alt="Leads Logo"
               width={55}
               height={55}
@@ -547,7 +546,7 @@ export default function LeadsContent() {
           </div>
         </div>
       </div>
-      {/* [MODIFIED] Table Section */}
+      
       <ResizableTable
         columns={columns}
         onSort={handleSort}
@@ -578,11 +577,11 @@ export default function LeadsContent() {
               key={lead.id}
               className="border-b border-gray-200 hover:bg-gray-50"
             >
-              {/* [MODIFIED] Added Serial Number Cell */}
+              
               <td className="py-2 px-3 text-gray-700 w-10 text-right text-sm">
                 {index + 1}
               </td>
-              {/* [MODIFIED] Added Checkbox Cell */}
+              
               <td className="py-2 px-2 text-right">
                 <input type="checkbox" className="rounded border-gray-300" />
               </td>
@@ -623,7 +622,7 @@ export default function LeadsContent() {
           ))
         )}
       </ResizableTable>
-      {/* New/Edit Lead Modal */}
+      
       <LeadFormModal
         isOpen={isNewLeadModalOpen}
         isEditMode={isEditMode}
@@ -634,9 +633,9 @@ export default function LeadsContent() {
         setLeadFormData={setLeadFormData}
         leadErrors={leadErrors}
         setLeadErrors={setLeadErrors}
-        isSaving={isSaving} // [MODIFIED]
+        isSaving={isSaving} 
       />
-      {/* Delete Lead Modal */}
+      
       <DeleteLeadModal
         open={showDeleteModal}
         onOpenChange={(open) => {

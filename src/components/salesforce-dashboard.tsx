@@ -33,7 +33,6 @@ import LeadFormModal from "./modals/lead-form-modal";
 import OpportunityFormModal from "./modals/opportunity-form-modal";
 import { getOrCreateAccountId } from "@/lib/account-utils";
 
-// Initial state for lead form
 const initialLeadFormData = {
   salutation: "",
   firstName: "",
@@ -56,7 +55,6 @@ const initialLeadFormData = {
   status: "",
 };
 
-// Initial state for contact form
 const initialContactFormData = {
   salutation: "",
   firstName: "",
@@ -74,7 +72,6 @@ const initialContactFormData = {
   mailingStateProvince: "",
 };
 
-// Initial state for opportunity form
 const initialOpportunityFormData = {
   opportunityName: "",
   accountName: "",
@@ -288,7 +285,7 @@ export default function SalesforceDashboard() {
     if (!validateLeadForm()) return;
 
     try {
-      // Map form data to match the database schema
+      
       const leadData = {
         salutation: leadFormData.salutation || null,
         first_name: leadFormData.firstName,
@@ -312,8 +309,8 @@ export default function SalesforceDashboard() {
           : null,
         lead_source: leadFormData.leadSource || null,
         industry: leadFormData.industry || null,
-        lead_owner: "Rishab Nagwani", // Default owner
-        status: "New", // Default status
+        lead_owner: "Rishab Nagwani", 
+        status: "New", 
       };
 
       const response = await axios.post("/api/v1/sobjects/leads", leadData);
@@ -342,7 +339,7 @@ export default function SalesforceDashboard() {
     if (!validateLeadForm()) return;
 
     try {
-      // Map form data to match the database schema
+      
       const leadData = {
         salutation: leadFormData.salutation || null,
         first_name: leadFormData.firstName,
@@ -366,8 +363,8 @@ export default function SalesforceDashboard() {
           : null,
         lead_source: leadFormData.leadSource || null,
         industry: leadFormData.industry || null,
-        lead_owner: "Rishab Nagwani", // Default owner
-        status: "New", // Default status
+        lead_owner: "Rishab Nagwani", 
+        status: "New", 
       };
 
       const response = await axios.post("/api/v1/sobjects/leads", leadData);
@@ -380,7 +377,7 @@ export default function SalesforceDashboard() {
             onClick: () => console.log("Undo lead creation"),
           }
         );
-        resetLeadForm(); // Reset form but keep modal open
+        resetLeadForm(); 
       }
     } catch (error) {
       console.error("Error creating lead:", error);
@@ -478,7 +475,7 @@ export default function SalesforceDashboard() {
         last_name: contactFormData.lastName,
         title: contactFormData.title || null,
         description: contactFormData.description || null,
-        contact_owner: "Rishab Nagwani", // Default owner
+        contact_owner: "Rishab Nagwani", 
         email: contactFormData.email,
         phone: contactFormData.phone || null,
         reports_to_contact_id: null,
@@ -548,7 +545,7 @@ export default function SalesforceDashboard() {
           : null,
         close_date: opportunityFormData.closeDate,
         description: opportunityFormData.description || null,
-        opportunity_owner: "Rishab Nagwani", // Default owner
+        opportunity_owner: "Rishab Nagwani", 
         stage: opportunityFormData.stage,
         probability: opportunityFormData.probability
           ? parseFloat(opportunityFormData.probability)
@@ -683,7 +680,7 @@ export default function SalesforceDashboard() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
-          {/* Discovery Banner */}
+          
           <div className="bg-[#edf4ff] border border-gray-200 rounded-2xl mb-6 overflow-hidden shadow-sm shadow-gray-500">
             {!isDiscoveryExpanded ? (
               <div
@@ -714,7 +711,7 @@ export default function SalesforceDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {/* Card 1 - Turn on marketing features */}
+                  
                   <div className="bg-white rounded-lg p-6 shadow-sm relative">
                     <button className="absolute top-4 right-4 text-[#706e6b] hover:text-[#181818]">
                       <X className="w-5 h-5" />
@@ -732,7 +729,6 @@ export default function SalesforceDashboard() {
                     </p>
                   </div>
 
-                  {/* Card 2 - Visualize your data with AI */}
                   <div className="bg-white rounded-lg p-6 shadow-sm relative">
                     <button className="absolute top-4 right-4 text-[#706e6b] hover:text-[#181818]">
                       <X className="w-5 h-5" />
@@ -750,7 +746,6 @@ export default function SalesforceDashboard() {
                     </p>
                   </div>
 
-                  {/* Card 3 - Import your contacts */}
                   <div className="bg-white rounded-lg p-6 shadow-sm relative">
                     <button className="absolute top-4 right-4 text-[#706e6b] hover:text-[#181818]">
                       <X className="w-5 h-5" />
@@ -787,10 +782,10 @@ export default function SalesforceDashboard() {
                   />
                   <div className="relative flex-1">
                     <Input
-                      placeholder="Search Leads..." // Changed
-                      value={leadSearch} // Changed
-                      onChange={(e) => setLeadSearch(e.target.value)} // Added
-                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" // Added pl-8
+                      placeholder="Search Leads..." 
+                      value={leadSearch} 
+                      onChange={(e) => setLeadSearch(e.target.value)} 
+                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" 
                     />
                     <Search className="w-4 h-4 text-black absolute right-2 top-1/2 -translate-y-1/2" />{" "}
                   </div>
@@ -918,10 +913,10 @@ export default function SalesforceDashboard() {
                   />
                   <div className="relative flex-1">
                     <Input
-                      placeholder="Search Contacts..." // Changed
-                      value={contactSearch} // Changed
-                      onChange={(e) => setContactSearch(e.target.value)} // Added
-                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" // Added pl-8
+                      placeholder="Search Contacts..." 
+                      value={contactSearch} 
+                      onChange={(e) => setContactSearch(e.target.value)} 
+                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" 
                     />
                     <Search className="w-4 h-4 text-black absolute right-2 top-1/2 -translate-y-1/2" />{" "}
                   </div>
@@ -955,7 +950,6 @@ export default function SalesforceDashboard() {
                         </tr>
                       </thead>
 
-                      {/* 3. Dynamic Table Body */}
                       <tbody>
                         {contactsLoading ? (
                           <tr>
@@ -1009,7 +1003,7 @@ export default function SalesforceDashboard() {
                 </div>
 
                 <div className="p-4 border-t border-[#dddbda] flex items-center justify-between">
-                  {/* 4. Functional "View Report" Link */}
+                  
                   <Link
                     href="/contacts"
                     className="text-[#0176d3] text-sm hover:underline"
@@ -1051,10 +1045,10 @@ export default function SalesforceDashboard() {
                   />
                   <div className="relative flex-1">
                     <Input
-                      placeholder="Search Opportunities..." // Changed
-                      value={opportunitySearch} // Changed
-                      onChange={(e) => setOpportunitySearch(e.target.value)} // Added
-                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" // Added pl-8
+                      placeholder="Search Opportunities..." 
+                      value={opportunitySearch} 
+                      onChange={(e) => setOpportunitySearch(e.target.value)} 
+                      className="flex-1 border border-black shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 text-sm font-normal h-8 px-2 rounded-lg" 
                     />
                     <Search className="w-4 h-4 text-black absolute right-2 top-1/2 -translate-y-1/2" />{" "}
                   </div>
@@ -1071,11 +1065,11 @@ export default function SalesforceDashboard() {
                     <ChevronDown className="w-4 h-4 text-blue-500" />
                   </Button>
                 </div>
-                {/* 2. Dynamic Bar Chart (Horizontal) */}
+                
                 <div className="p-6">
                   <div className="h-60 w-full">
                     {" "}
-                    {/* Set a fixed height for the chart container */}
+                    
                     <ResponsiveContainer width="100%" height="100%">
                       {opportunitiesLoading ? (
                         <div className="flex items-center justify-center h-full text-sm text-[#706e6b]">
@@ -1084,15 +1078,15 @@ export default function SalesforceDashboard() {
                       ) : (
                         <BarChart
                           data={opportunityStageData}
-                          layout="vertical" // <-- This is the key prop for a horizontal chart
+                          layout="vertical" 
                           margin={{
-                            top: 20, // Space for X-axis labels at the top
+                            top: 20, 
                             right: 10,
-                            left: 30, // Space for Y-axis stage names
+                            left: 30, 
                             bottom: 5,
                           }}
                         >
-                          {/* Grid lines are now vertical */}
+                          
                           <CartesianGrid
                             strokeDasharray="3 3"
                             horizontal={false}
@@ -1100,15 +1094,14 @@ export default function SalesforceDashboard() {
                             stroke="#e5e7eb"
                           />
 
-                          {/* X-axis (Record Count) is now type="number" and moved to the top */}
                           <XAxis
                             type="number"
-                            orientation="top" // <-- Moves axis to the top
+                            orientation="top" 
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
                             tick={{ fill: "#706e6b" }}
-                            allowDecimals={false} // Ensure whole numbers for "count"
+                            allowDecimals={false} 
                             label={{
                               value: "Record Count",
                               position: "top",
@@ -1124,14 +1117,14 @@ export default function SalesforceDashboard() {
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            tick={{ fill: "#181818" }} // Darker text for stage names
-                            width={100} // Adjust width to fit stage names
+                            tick={{ fill: "#181818" }} 
+                            width={100} 
                           >
                             <Label
                               value="Stage"
                               position="left"
-                              angle={-90} // Rotates the label vertically
-                              offset={10} // Pushes it further left
+                              angle={-90} 
+                              offset={10} 
                               style={{
                                 textAnchor: "middle",
                                 fill: "#706e6b",
@@ -1141,7 +1134,7 @@ export default function SalesforceDashboard() {
                           </YAxis>
 
                           <Tooltip
-                            cursor={{ fill: "rgba(243, 243, 242, 0.5)" }} // Lighter hover color
+                            cursor={{ fill: "rgba(243, 243, 242, 0.5)" }} 
                             contentStyle={{
                               backgroundColor: "white",
                               border: "1px solid #dddbda",
@@ -1165,7 +1158,7 @@ export default function SalesforceDashboard() {
                 </div>
 
                 <div className="p-4 border-t border-[#dddbda] flex items-center justify-between">
-                  {/* 3. Functional "View Report" Link */}
+                  
                   <Link
                     href="/sales"
                     className="text-[#0176d3] text-sm hover:underline"
@@ -1200,7 +1193,6 @@ export default function SalesforceDashboard() {
         </div>
       </div>
 
-      {/* New Lead Modal */}
       <LeadFormModal
         isEditMode={false}
         isOpen={isNewLeadModalOpen}
@@ -1213,7 +1205,6 @@ export default function SalesforceDashboard() {
         setLeadErrors={setLeadErrors}
       />
 
-      {/* New Contact Modal */}
       <ContactFormModal
         isEditMode={false}
         isOpen={isNewContactModalOpen}
@@ -1226,7 +1217,6 @@ export default function SalesforceDashboard() {
         setContactErrors={setContactErrors}
       />
 
-      {/* New Opportunity Modal */}
       <OpportunityFormModal
         isEditMode={false}
         isOpen={isNewOpportunityModalOpen}

@@ -10,7 +10,7 @@ export default function Header() {
     <>
       <header className="bg-[#066afe] h-11 flex items-center justify-between px-4 text-white fixed top-0 left-[76px] right-0 z-50">
         <div className="flex items-center gap-4">
-          {/* Empty space - logo moved to white bar */}
+          
         </div>
 
         <div className="flex items-center gap-3">

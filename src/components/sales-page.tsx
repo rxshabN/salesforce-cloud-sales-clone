@@ -33,13 +33,12 @@ export default function SalesPage() {
 
   return (
     <div className="h-full flex flex-col bg-[#f3f2f2]">
-      {/* Page Header - Fixed */}
+      
       <div className="bg-white border-b border-gray-200 px-8 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-normal text-[#080707]">Sales</h1>
 
-            {/* Tab Navigation */}
             <div className="flex items-center gap-6">
               {tabs.map((tab) => (
                 <button
@@ -66,7 +65,6 @@ export default function SalesPage() {
         </div>
       </div>
 
-      {/* Tab Content - Scrollable */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === "leads" && <LeadsContent />}
         {activeTab === "contacts" && <ContactsContent />}

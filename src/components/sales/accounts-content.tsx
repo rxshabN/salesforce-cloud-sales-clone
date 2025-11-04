@@ -372,8 +372,8 @@ export default function AccountsContent() {
         website: accountData.website || "",
         type: accountData.type || "",
         description: accountData.description || "",
-        parentAccount: parentAccountName, // [MODIFIED]
-        parentAccountId: accountData.parent_account_id || null, // [MODIFIED]
+        parentAccount: parentAccountName, 
+        parentAccountId: accountData.parent_account_id || null, 
         phone: accountData.phone || "",
         billingCountry: accountData.billing_country || "",
         billingStreet: accountData.billing_street || "",
