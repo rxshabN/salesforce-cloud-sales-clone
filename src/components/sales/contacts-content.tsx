@@ -40,7 +40,6 @@ interface Contact {
   account_id?: number;
 }
 
-// Initial state for NEW contact form
 const initialContactFormData: ContactFormData = {
   salutation: "",
   firstName: "",
@@ -61,13 +60,12 @@ const initialContactFormData: ContactFormData = {
 export default function ContactsContent() {
   const { showToast } = useToast();
 
-  // State for list, loading, search
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  // State for "New/Edit Contact" Modal
+  
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingContactId, setEditingContactId] = useState<number | null>(null);
@@ -78,7 +76,6 @@ export default function ContactsContent() {
     {}
   );
 
-  // State for "Delete" Modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<number | null>(
     null
@@ -104,7 +101,6 @@ export default function ContactsContent() {
   };
   const [deletingContactName, setDeletingContactName] = useState("");
 
-  // --- Data Fetching ---
   const fetchContacts = async (query: string = "") => {
     setLoading(true);
     try {
@@ -114,7 +110,6 @@ export default function ContactsContent() {
 
       const response = await axios.get(url);
 
-      // Map Prisma data to local Contact interface
       const mappedContacts = response.data.map((c: any) => ({
         id: c.id,
         name: `${c.first_name || ""} ${c.last_name || ""}`.trim(),
@@ -137,22 +132,20 @@ export default function ContactsContent() {
   };
 
   useEffect(() => {
-    // Fetch initial data on mount
+    
     fetchContacts();
   }, []);
 
-  // Add debounced search effect
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchContacts(searchQuery);
-    }, 300); // 300ms debounce
+    }, 300); 
 
     return () => {
       clearTimeout(handler);
     };
   }, [searchQuery]);
 
-  // --- "New/Edit Contact" Modal Logic ---
   const resetContactForm = () => {
     setContactFormData(initialContactFormData);
     setContactErrors({});
@@ -193,7 +186,7 @@ export default function ContactsContent() {
         contact_owner: "Rishab Nagwani",
         email: contactFormData.email,
         phone: contactFormData.phone || null,
-        reports_to_contact_id: null, // Simplified for this example
+        reports_to_contact_id: null, 
         mailing_country: contactFormData.mailingCountry || null,
         mailing_street: contactFormData.mailingStreet || null,
         mailing_city: contactFormData.mailingCity || null,
@@ -202,7 +195,7 @@ export default function ContactsContent() {
       };
 
       if (isEditMode && editingContactId) {
-        // Update existing contact
+        
         const response = await axios.patch(
           `/api/v1/sobjects/contacts/${editingContactId}`,
           contactData
@@ -220,7 +213,7 @@ export default function ContactsContent() {
           fetchContacts(searchQuery);
         }
       } else {
-        // Create new contact
+        
         const response = await axios.post(
           "/api/v1/sobjects/contacts",
           contactData
@@ -303,7 +296,7 @@ export default function ContactsContent() {
             onClick: () => {},
           }
         );
-        resetContactForm(); // Reset form but keep modal open
+        resetContactForm(); 
         fetchContacts(searchQuery);
       }
     } catch (error: any) {
@@ -332,23 +325,21 @@ export default function ContactsContent() {
     resetContactForm();
   };
 
-  // --- "Edit" and "Delete" Handlers ---
   const handleEditClick = async (contact: Contact) => {
     try {
-      // 1. Fetch full contact details
+      
       const response = await axios.get(
         `/api/v1/sobjects/contacts/${contact.id}`
       );
       const contactData = response.data;
 
-      // 2. Map to form data
       setContactFormData({
         salutation: contactData.salutation || "",
         firstName: contactData.first_name || "",
         lastName: contactData.last_name || "",
         accountName: contactData.accounts?.name || "",
         title: contactData.title || "",
-        reportsTo: "", // 'reportsTo' is complex, requires mapping contact ID to name. Skipping for now.
+        reportsTo: "", 
         description: contactData.description || "",
         email: contactData.email || "",
         phone: contactData.phone || "",
@@ -359,11 +350,9 @@ export default function ContactsContent() {
         mailingStateProvince: contactData.mailing_state_province || "",
       });
 
-      // 3. Set edit states
       setIsEditMode(true);
       setEditingContactId(contact.id);
 
-      // 4. Open modal
       setIsNewContactModalOpen(true);
     } catch (error) {
       console.error("Error fetching contact:", error);
@@ -406,7 +395,6 @@ export default function ContactsContent() {
     }
   };
 
-  // --- Table and Action Button Definitions ---
   const columns = [
     {
       key: "serialNumber",
@@ -490,7 +478,7 @@ export default function ContactsContent() {
 
   return (
     <div className="bg-[#f3f2f2]">
-      {/* List View Header */}
+      
       <div className="bg-transparent px-8 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -560,7 +548,6 @@ export default function ContactsContent() {
         </div>
       </div>
 
-      {/* Table */}
       <ResizableTable
         columns={columns}
         onSort={handleSort}
@@ -641,7 +628,6 @@ export default function ContactsContent() {
         )}
       </ResizableTable>
 
-      {/* "New/Edit Contact" Modal */}
       <ContactFormModal
         isOpen={isNewContactModalOpen}
         isEditMode={isEditMode}
@@ -654,7 +640,6 @@ export default function ContactsContent() {
         setContactErrors={setContactErrors}
       />
 
-      {/* "Delete Contact" Modal */}
       <DeleteContactModal
         open={deleteModalOpen}
         onOpenChange={(open) => {

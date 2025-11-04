@@ -15,13 +15,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Import shadcn Select
-import { Label } from "@/components/ui/label"; // Import shadcn Label
-import { Textarea } from "@/components/ui/textarea"; // Import shadcn Textarea
-import { X, Ban } from "lucide-react"; // Import X and Ban
+} from "@/components/ui/select"; 
+import { Label } from "@/components/ui/label"; 
+import { Textarea } from "@/components/ui/textarea"; 
+import { X, Ban } from "lucide-react"; 
 import Image from "next/image";
 
-// 1. Updated Interface with 'status'
 export interface LeadFormData {
   salutation: string;
   firstName: string;
@@ -41,7 +40,7 @@ export interface LeadFormData {
   annualRevenue: string;
   leadSource: string;
   industry: string;
-  status: string; // Added status
+  status: string; 
 }
 
 interface LeadFormModalProps {
@@ -54,7 +53,7 @@ interface LeadFormModalProps {
   setLeadFormData: (data: LeadFormData) => void;
   leadErrors: Record<string, boolean>;
   setLeadErrors: (errors: Record<string, boolean>) => void;
-  isSaving?: boolean; // Added for button loading state
+  isSaving?: boolean; 
 }
 
 export default function LeadFormModal({
@@ -67,9 +66,9 @@ export default function LeadFormModal({
   setLeadFormData,
   leadErrors,
   setLeadErrors,
-  isSaving, // Added
+  isSaving, 
 }: LeadFormModalProps) {
-  // 2. All Dropdown options from your screenshots
+  
   const salutationOptions = [
     "--None--",
     "Mr.",
@@ -360,7 +359,6 @@ export default function LeadFormModal({
             </DialogTitle>
           </DialogHeader>
 
-          {/* 6. "Required Info" text moved below header */}
           <div className="px-6 text-right">
             <p className="text-xs text-[#000000]">
               <span className="text-red-500">*</span> = Required Information
@@ -368,21 +366,20 @@ export default function LeadFormModal({
           </div>
 
           <div className="px-10 py-4 space-y-6">
-            {/* About Section */}
+            
             <div>
               <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
                 About
               </h3>
 
-              {/* 7. Using a 2-column grid */}
               <div className="space-y-4">
-                {/* Name (spans 2 cols) */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Name
                   </Label>
                   <div className="space-y-3">
-                    {/* Salutation <Select> */}
+                    
                     <div>
                       <Label className="block text-xs text-[#000000] mb-1">
                         Salutation
@@ -409,7 +406,6 @@ export default function LeadFormModal({
                       </Select>
                     </div>
 
-                    {/* First Name with new Error Style */}
                     <div>
                       <Label className="block text-xs text-[#000000] mb-1">
                         <span className="text-red-600">*</span> First Name
@@ -446,7 +442,6 @@ export default function LeadFormModal({
                       )}
                     </div>
 
-                    {/* Last Name with new Error Style */}
                     <div>
                       <Label className="block text-xs text-[#000000] mb-1">
                         <span className="text-red-600">*</span> Last Name
@@ -482,7 +477,6 @@ export default function LeadFormModal({
                   </div>
                 </div>
 
-                {/* Company with new Error Style */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Company
@@ -515,7 +509,6 @@ export default function LeadFormModal({
                   )}
                 </div>
 
-                {/* Title */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Title
@@ -532,7 +525,6 @@ export default function LeadFormModal({
                   />
                 </div>
 
-                {/* Website */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Website
@@ -549,7 +541,6 @@ export default function LeadFormModal({
                   />
                 </div>
 
-                {/* Description */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Description
@@ -566,7 +557,6 @@ export default function LeadFormModal({
                   />
                 </div>
 
-                {/* Lead Status <Select> */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Lead Status
@@ -603,7 +593,6 @@ export default function LeadFormModal({
                   )}
                 </div>
 
-                {/* Lead Owner */}
                 <div>
                   <Label className="block text-sm text-[#181818]">
                     Lead Owner
@@ -623,13 +612,12 @@ export default function LeadFormModal({
               </div>
             </div>
 
-            {/* Get in Touch Section */}
             <div>
               <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
                 Get in Touch
               </h3>
               <div className="space-y-4">
-                {/* Phone */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Phone
@@ -645,7 +633,7 @@ export default function LeadFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm"
                   />
                 </div>
-                {/* Email with new Error Style */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     <span className="text-red-600">*</span> Email
@@ -678,7 +666,7 @@ export default function LeadFormModal({
                     </p>
                   )}
                 </div>
-                {/* Country <Select> */}
+                
                 <div>
                   <Label className="block text-xs text-[#000000] mb-1">
                     Country
@@ -693,7 +681,7 @@ export default function LeadFormModal({
                       <SelectValue placeholder="--None--" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* You can paste your full country list here */}
+                      
                       {allCountries.map((country) => (
                         <SelectItem key={country} value={country}>
                           {country}
@@ -702,7 +690,7 @@ export default function LeadFormModal({
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Street */}
+                
                 <div>
                   <Label className="block text-xs text-[#000000] mb-1">
                     Street
@@ -718,7 +706,7 @@ export default function LeadFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm min-h-[60px]"
                   />
                 </div>
-                {/* City */}
+                
                 <div>
                   <Label className="block text-xs text-[#000000] mb-1">
                     City
@@ -731,9 +719,9 @@ export default function LeadFormModal({
                     className="w-full border border-[#000000] rounded px-3 py-2 text-sm"
                   />
                 </div>
-                {/* This is the 2-column grid you requested */}
+                
                 <div className="grid grid-cols-3 gap-x-8 gap-y-4">
-                  {/* Zip/Postal Code */}
+                  
                   <div className="col-span-2">
                     <Label className="block text-xs text-[#000000] mb-1">
                       Zip/Postal Code
@@ -750,7 +738,6 @@ export default function LeadFormModal({
                     />
                   </div>
 
-                  {/* State/Province <Select> */}
                   <div>
                     <Label className="block text-xs text-[#000000] mb-1">
                       State/Province
@@ -773,18 +760,17 @@ export default function LeadFormModal({
                     </Select>
                   </div>
                 </div>{" "}
-                {/* End of 2-column grid */}
+                
               </div>
             </div>
 
-            {/* Segment Section */}
             <div>
               <h3 className="text-xl font-normal text-gray-800 bg-[#f3f2f2] px-4 py-1 -mx-7 mb-4 rounded-lg">
                 Segment
               </h3>
-              {/* This is also a single-column layout */}
+              
               <div className="space-y-4">
-                {/* No. of Employees */}
+                
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     No. of Employees
@@ -802,7 +788,6 @@ export default function LeadFormModal({
                   />
                 </div>
 
-                {/* Annual Revenue */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Annual Revenue
@@ -820,7 +805,6 @@ export default function LeadFormModal({
                   />
                 </div>
 
-                {/* Lead Source <Select> */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Lead Source
@@ -844,7 +828,6 @@ export default function LeadFormModal({
                   </Select>
                 </div>
 
-                {/* Industry <Select> */}
                 <div>
                   <Label className="block text-sm text-[#181818] mb-1">
                     Industry
@@ -872,7 +855,6 @@ export default function LeadFormModal({
           </div>
         </div>
 
-        {/* Modal Footer */}
         <DialogFooter className="px-6 py-4 border-t border-gray-400 flex-row justify-end gap-3">
           <Button
             onClick={onClose}

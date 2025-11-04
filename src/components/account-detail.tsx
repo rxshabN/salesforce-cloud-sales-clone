@@ -63,7 +63,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
   const [isInlineEditing, setIsInlineEditing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Opportunity Modal State
   const [isOpportunityModalOpen, setIsOpportunityModalOpen] = useState(false);
   const [opportunityFormData, setOpportunityFormData] =
     useState<OpportunityFormData>({
@@ -82,7 +81,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
   >({});
   const [isSavingOpportunity, setIsSavingOpportunity] = useState(false);
 
-  // Contact Modal State
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [contactFormData, setContactFormData] = useState<ContactFormData>({
     salutation: "",
@@ -106,10 +104,8 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
   );
   const [isSavingContact, setIsSavingContact] = useState(false);
 
-  // Form state for inline editing
   const [editFormData, setEditFormData] = useState<any>({});
 
-  // Fetch account data
   const fetchAccount = async () => {
     try {
       setLoading(true);
@@ -216,10 +212,10 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
           onClick: () => {},
         }
       );
-      fetchAccount(); // Refresh related lists
+      fetchAccount(); 
 
       if (isSaveAndNew) {
-        handleNewOpportunityClick(); // Resets form for new entry
+        handleNewOpportunityClick(); 
       } else {
         setIsOpportunityModalOpen(false);
       }
@@ -298,7 +294,7 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
           onClick: () => {},
         }
       );
-      fetchAccount(); // Refresh related lists
+      fetchAccount(); 
 
       if (isSaveAndNew) {
         handleNewContactClick();
@@ -316,7 +312,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
     }
   };
 
-  // Handle inline edit save
   const handleInlineSave = async () => {
     try {
       await axios.patch(`/api/v1/sobjects/accounts/${accountId}`, editFormData);
@@ -335,7 +330,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
     }
   };
 
-  // Handle delete
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this account?")) return;
 
@@ -355,7 +349,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
     }
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -387,13 +380,12 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
 
   return (
     <div className="overflow-y-auto h-full flex flex-col bg-[#f3f2f2]">
-      {/* Fixed Header with Tabs */}
+      
       <div className="fixed bg-white border-b border-gray-200 px-8 py-4 shrink-0 w-full">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-normal text-[#080707]">Sales</h1>
 
-            {/* Tab Navigation */}
             <div className="flex items-center gap-6">
               {tabs.map((tab) => (
                 <button
@@ -420,7 +412,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
         </div>
       </div>
 
-      {/* Account Header */}
       <div className="bg-transparent px-6 py-4 mt-20">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -528,10 +519,9 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1">
         <div className="grid grid-cols-[380px_1fr_380px] gap-4 p-3">
-          {/* Left Column */}
+          
           <div className="bg-white border-r border-[#dddbda] p-2 space-y-6 rounded-2xl">
             {isInlineEditing ? (
               <div className="flex-1 bg-white py-2 px-4">
@@ -539,7 +529,7 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
                   Edit Account Information
                 </h2>
                 <div className="max-w-4xl space-y-6 px-3">
-                  {/* About Section */}
+                  
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       About
@@ -615,7 +605,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
                     </div>
                   </div>
 
-                  {/* Get in Touch Section */}
                   <div>
                     <h3 className="text-base font-normal text-[#181818] bg-[#f3f2f2] px-4 py-2 -mx-6 mb-4 rounded-2xl">
                       Get in Touch
@@ -798,7 +787,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="justify-center flex items-center gap-3 pt-4 border-t border-black">
                     <Button
                       onClick={() => setIsInlineEditing(false)}
@@ -817,7 +805,7 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
               </div>
             ) : (
               <>
-                {/* About Section */}
+                
                 <div>
                   <button
                     onClick={() => setIsAboutExpanded(!isAboutExpanded)}
@@ -934,7 +922,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
                   )}
                 </div>
 
-                {/* Get in Touch Section */}
                 <div>
                   <button
                     onClick={() =>
@@ -1049,7 +1036,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
                   )}
                 </div>
 
-                {/* History Section */}
                 <div>
                   <button
                     onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
@@ -1111,9 +1097,8 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
             )}
           </div>
 
-          {/* Middle Column - Activity Timeline */}
           <div className="bg-white p-6 rounded-2xl">
-            {/* Action Buttons */}
+            
             <div className="flex items-center gap-2 mb-6">
               <button className="w-10 h-10 rounded-full border-2 border-[#dddbda] bg-white flex items-center justify-center hover:shadow-md transition-all">
                 <Mail className="w-5 h-5 text-[#706e6b]" />
@@ -1129,7 +1114,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
               </button>
             </div>
 
-            {/* Filters */}
             <div className="bg-white rounded p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-[#706e6b]">
@@ -1150,7 +1134,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
               </div>
             </div>
 
-            {/* Upcoming & Overdue */}
             <div className="bg-white rounded mb-4">
               <button
                 onClick={() => setIsUpcomingExpanded(!isUpcomingExpanded)}
@@ -1180,7 +1163,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
               )}
             </div>
 
-            {/* Show All Activities Button */}
             <div className="text-center">
               <Button className="bg-[#066afe] rounded-4xl text-white hover:bg-[#0159a8] h-9 px-6 text-sm">
                 Show All Activities
@@ -1188,13 +1170,11 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
             </div>
           </div>
 
-          {/* Right Column - Related Lists */}
           <div className="bg-white rounded-2xl border-l border-[#dddbda] p-6">
             <h2 className="text-lg font-normal text-[#181818] mb-6">
               Related Lists
             </h2>
 
-            {/* Contacts */}
             <div className="mb-6">
               <button
                 onClick={() => setIsContactsExpanded(!isContactsExpanded)}
@@ -1221,7 +1201,6 @@ export default function AccountDetail({ accountId }: AccountDetailProps) {
               )}
             </div>
 
-            {/* Opportunities */}
             <div>
               <button
                 onClick={() =>

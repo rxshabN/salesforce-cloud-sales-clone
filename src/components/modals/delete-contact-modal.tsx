@@ -27,7 +27,7 @@ export default function DeleteContactModal({
         className="min-w-2xl p-0 h-44 rounded-3xl"
         showCloseButton={false}
       >
-        {/* Header */}
+        
         <div className="border-b border-gray-400 px-6 flex items-center justify-between">
           <DialogTitle className="text-2xl font-normal text-gray-800 mx-auto">
             Delete Contact
@@ -40,14 +40,12 @@ export default function DeleteContactModal({
           </button>
         </div>
 
-        {/* Content */}
         <div className="px-6 pl-4">
           <p className="text-center text-xs text-gray-700 -mb-7">
             Are you sure you want to delete this contact?
           </p>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-gray-400 px-6 flex items-center justify-end gap-3">
           <Button
             variant="outline"
